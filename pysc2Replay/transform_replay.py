@@ -13,7 +13,7 @@ import math
 import random
 import numpy as np
 import multiprocessing
-import sys, os
+import sys, os, csv
 from Constants import const
 
 cpus = multiprocessing.cpu_count()
@@ -26,9 +26,9 @@ flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
 flags.DEFINE_integer("batch", 1, "Size of replay batch for each process", lower_bound=1, upper_bound=512)
 
-class Parser:
-    screen_size_px=(306, 306)
-    minimap_size_px=(306, 306)
+class Parser: #612
+    screen_size_px=(const.WorldSize('x')*4, const.WorldSize('x')*4)
+    minimap_size_px=(const.WorldSize('x')*4, const.WorldSize('x')*4)
     map_size=(153,148)
     camera_width = 153 * 2
 
@@ -61,8 +61,7 @@ class Parser:
         _screen_size_px = point.Point(*self.screen_size_px)
         _minimap_size_px = point.Point(*self.minimap_size_px)
         interface = sc_pb.InterfaceOptions(
-            raw=True, score=True,
-            feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width,crop_to_playable_area=True),show_cloaked=True, raw_affects_selection=True,raw_crop_to_playable_area=True)
+            feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width,crop_to_playable_area=True),show_cloaked=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
         _screen_size_px.assign_to(interface.feature_layer.resolution)
         _minimap_size_px.assign_to(interface.feature_layer.minimap_resolution)
 
@@ -160,9 +159,24 @@ class Parser:
             self._state = StepType.MID
 
         print("Saving data")
+        packageCounter = 0
         #print(self.info)
         #print(self.agent.states)
-        pickle.dump({"state" : self.agent.states}, open("C:/Users/LeoCharlie/PycharmProjects/DeepLearning/data/" + "Me" + ".txt", "wb"))
+        for state in self.agent.states:
+            fileName = '../training_data/' + str(packageCounter) + '.csv'
+            # dirname = os.path.dirname(fileName)
+            # if not os.path.exists(dirname):
+            #     os.makedirs(dirname)
+            with open(fileName, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                # writer.writerow(state['action'])
+                # writer.writerows(state['feature_layers'])
+                for action in state['action']:
+                    writer.writerow(action)
+                for layer in state['feature_layers']:
+                    writer.writerows(layer)
+            packageCounter += 1
+        #pickle.dump({"state" : self.agent.states}, open("C:/Users/LeoCharlie/PycharmProjects/DeepLearning/data/" + "Me" + ".txt", "wb"))
         print("Data successfully saved")
         self.agent.states = []
         print("Data flushed")

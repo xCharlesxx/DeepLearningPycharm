@@ -5,51 +5,52 @@ from pysc2.lib import actions as sc_action
 from pysc2.lib import static_data
 from pysc2.lib import units
 from s2clientprotocol.raw_pb2 import Unit
-
+from Constants import const
+import datetime
 class Translator(object):
-    """description of class"""
     def crop_feature_layers(self, stencil, featureLayers, new_width, new_height):
+        # Remove unused layers
+        used = [0, 1, 2, 5, 6, 7, 9, 11, 14, 16]
         newFeature = []
-        for layer in featureLayers:
-            input = layer
-            newInput = np.zeros((new_height,new_width),int)
-            counterx = 0
-            countery = 0
-            for numy, y in enumerate(stencil):
-                for numx, x in enumerate(y): 
-                    if (x != 0):
-                        newInput[countery][counterx] = input[numy][numx]
-                        counterx+=1
-                    if (counterx == new_width):
-                        countery+=1
-                        counterx=0
-            newFeature.append(newInput)
+
+        result = np.argmax(stencil != 0)
+        stencilY = int(result / (const.ScreenSize()*2))
+        stencilX = result % stencilY
+
+        for index, layer in enumerate(featureLayers):
+            if (index in used):
+                newLayer = np.zeros((new_height, new_width), int)
+                for numy, y in enumerate(newLayer):
+                    for numx, x in enumerate(y):
+                        newLayer[numy][numx] = layer[stencilY + numy][stencilX + numx]
+                newFeature.append(newLayer)
+
         return newFeature   
 
     def translate_feature_layers(self, featurelayers):
         # This forces unit type to be defined by their index and then between 0 and 1
-        unit_type = featurelayers[6]
-        unit_type_compressed = np.zeros(featurelayers[6].shape, dtype=np.float)
-        for y in range(len(featurelayers[6])):
-            for x in range(len(featurelayers[6][y])):
+        unit_type = featurelayers[4]
+        unit_type_compressed = np.zeros(featurelayers[4].shape, dtype=np.float)
+        for y in range(len(featurelayers[4])):
+            for x in range(len(featurelayers[4][y])):
                 if unit_type[y][x] > 0 and unit_type[y][x] in static_data.UNIT_TYPES:
                     unit_type_compressed[y][x] = static_data.UNIT_TYPES.index(unit_type[y][x]) / len(static_data.UNIT_TYPES)
-        units
+
         newFeatureLayers = [
              featurelayers[0] / 255,               # height_map 0 - 256
              featurelayers[1] / 2,                 # visibility 0 - 2
              featurelayers[2],                     # creep 0 - 1
            # featurelayers[3]                      # power 0 - 1
-             (featurelayers[5] == 1).astype(int),  # own_units 0 - 1
-             (featurelayers[5] == 3).astype(int),  # neutral_units 0 - 1
-             (featurelayers[5] == 4).astype(int),  # enemy_units 0 - 1
+             (featurelayers[3] == 1).astype(int),  # own_units 0 - 1
+             (featurelayers[3] == 3).astype(int),  # neutral_units 0 - 1
+             (featurelayers[3] == 4).astype(int),  # enemy_units 0 - 1
              unit_type_compressed,                 # unit types 0 - 1 << Categorical
-             featurelayers[7],                     # selected 0 - 1
-             featurelayers[9] / 255,               # unit_hit_points_ratio 0 - 256
-             featurelayers[11] / 255,              # energy ratio 0 - 256
-             featurelayers[13] / 255,              # shields ratio 0 - 256
-             featurelayers[14],                    # unit_density 0 - 16
-             featurelayers[16]                     # effects 0 - 16 << Categorical
+             featurelayers[5],                     # selected 0 - 1
+             featurelayers[6] / 255,               # unit_hit_points_ratio 0 - 256
+             featurelayers[7] / 255,              # energy ratio 0 - 256
+          #  featurelayers[13] / 255,              # shields ratio 0 - 256
+             featurelayers[8] / 15,               # unit_density 0 - 16
+             featurelayers[9] / 15                # effects 0 - 16 << Categorical
         ]
         return newFeatureLayers
 

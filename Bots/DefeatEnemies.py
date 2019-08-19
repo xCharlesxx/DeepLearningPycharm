@@ -102,8 +102,8 @@ class DefeatEnemies(base_agent.BaseAgent):
                 #    prediction = self.model.predict(newInput)
 
 
-                outputx = prediction[0][0] * const.ScreenSize()
-                outputy = prediction[0][1] * const.ScreenSize()
+                outputx = prediction[0][0] * const.ScreenSize().x
+                outputy = prediction[0][1] * const.ScreenSize().y
             #return actions.FunctionCall(function_id, args)
 
                 return actions.FUNCTIONS.Attack_screen("now", (outputx,outputy))

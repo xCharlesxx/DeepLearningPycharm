@@ -9,7 +9,7 @@ from pysc2.lib import static_data
 from pysc2.agents import base_agent
 from Constants import const
 from Translator import Translator
-
+import datetime
 class ObserverAgent(base_agent.BaseAgent):
     action_dict = {}
     cam_pos_offset = [0, 0]
@@ -96,10 +96,10 @@ class ObserverAgent(base_agent.BaseAgent):
         return newInput
 
     def select_point(self, args):
-        return list(([int(args[0][0])], [(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]]))
+        return list((int(args[0][0]), [(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]]))
 
     def single_select_point(self, args):
-        return list(([[0], (args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]]))
+        return list((0, [(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]]))
 
     def double_select_point(self, args):
         ##TODO if any of the values are the same
@@ -127,7 +127,7 @@ class ObserverAgent(base_agent.BaseAgent):
             id = '117'
 
         if (id in [452, 13, 17]):
-            return [0, [args[1][0] / 2, args[1][1] / 2]]
+            return [id, 0, [args[1][0] / 2, args[1][1] / 2]]
 
         func = self.action_dict.get(id, self.default)
         output = func(args)
@@ -142,11 +142,11 @@ class ObserverAgent(base_agent.BaseAgent):
         #print(time_step.observation.camera_position)
         #print(self.cam_pos_offset)
         #print(time_step.observation.camera_position - self.cam_pos_offset)
-        print (act)
+        #print (act)
         state = {"action": [self.extract_args(int(act.function), act.arguments)]}
         if ("Unknown" in state["action"][0]):
             return 0
-        print(state["action"])
+        #print(state["action"])
         height_map = time_step.observation.feature_screen[0]
         #Remove all Zero lines 
         height_map = height_map[~np.all(height_map == 0, axis=1)]
@@ -172,21 +172,24 @@ class ObserverAgent(base_agent.BaseAgent):
         # print(height)
         #print("\n")
         #return
-        # T = Translator()
-        #
-        # tFeatureLayers = T.translate_feature_layers(T.crop_feature_layers(time_step.observation.feature_screen[0],
-        #                                                                  time_step.observation.feature_screen,
-        #                                                                 width, height))
-        #
-        # state["feature_layers"] = tFeatureLayers
+        print("Start")
+        print(datetime.datetime.now().time())
+        T = Translator()
 
+        tFeatureLayers = T.translate_feature_layers(T.crop_feature_layers(time_step.observation.feature_screen[0],
+                                                                         time_step.observation.feature_screen,
+                                                                        width, height))
+
+        state["feature_layers"] = tFeatureLayers
+        print("End")
+        print(datetime.datetime.now().time())
         # for y in tFeatureLayers:
         #    for x in y:
         #        output = ""
         #        for i in x:
         #            output+=str(i)
-               #print(output)
-           #print("\n")
+        #        print(output)
+        #    print("\n")
         
 
     #[0 "height_map", 
@@ -214,16 +217,17 @@ class NothingAgent(base_agent.BaseAgent):
     def step(self, obs):
         #print(obs.observation.available_actions)
         height = 0
-        for x in obs.observation.feature_screen[0]:
+        for x in obs.observation.feature_screen[6]:
             output = ""
             width = 0
             for i in x:
                 output+=str(i)
-                output+=""
+                output+="."
                 width += 1
             print(output)
             height += 1
         print("\n")
+        print("W: {} H: {}".format(len(obs.observation.feature_screen[0][0]), len(obs.observation.feature_screen[0])))
         if (1 in obs.observation.available_actions):
             return sc_action.FUNCTIONS.move_camera([const.MiniMapSize()/2,const.MiniMapSize()/2])
         return sc_action.FUNCTIONS.no_op()

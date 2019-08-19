@@ -1,12 +1,13 @@
+from pysc2.lib import point
 class const:
     def InputSize():
        return 84
     def OutputSize():
         return 2
     def ScreenSize():
-       return 500
+       return 304#point.Point(304,294)#[153, 153]
     def MiniMapSize():
-       return 250
+       return 304#point.Point(304,294)#[153, 153]
     def WorldSize(x_y):
         if (x_y == 'x'):
             return 153 

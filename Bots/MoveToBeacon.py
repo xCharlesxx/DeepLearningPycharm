@@ -132,8 +132,8 @@ class MoveToBeacon(base_agent.BaseAgent):
                 newInput = numpy.expand_dims(newInput, axis=2)
                 newInput = newInput.reshape([-1,const.InputSize(),const.InputSize(),1])
                 prediction = self.model.predict(newInput)
-                outputx = prediction[0][0] * const.ScreenSize()
-                outputy = prediction[0][1] * const.ScreenSize()
+                outputx = prediction[0][0] * const.ScreenSize().x
+                outputy = prediction[0][1] * const.ScreenSize().y
                 #print(('Network Prediction vs Optimum: ({},{}) ({},{})'.format(int(outputx),int(outputy),beacon.x,beacon.y)), end='\r')
                 return actions.FUNCTIONS.Attack_screen("now", (outputx,outputy))
         #Select Marine
@@ -244,8 +244,8 @@ class GenerateMoveToBeaconTestData(base_agent.BaseAgent):
 
         self.packagedInput = newinput
         #/84 to get a number between 0 and 1 as outputs for DNN
-        self.packagedOutput = [float(round(Decimal(outputx/const.ScreenSize()),2)),
-                                                       float(round(Decimal(outputy/const.ScreenSize()),2))]
+        self.packagedOutput = [float(round(Decimal(outputx/const.ScreenSize().x),2)),
+                                                       float(round(Decimal(outputy/const.ScreenSize().y),2))]
         if self.unit_type_is_selected(obs, units.Terran.Marine):
             if self.can_do(obs, actions.FUNCTIONS.Attack_screen.id):
                 return actions.FUNCTIONS.Attack_screen("now", (outputx,outputy))

@@ -57,6 +57,38 @@ def get_training_data(training_data_dir):
 
     return [inputs,outputs]
 
+def get_training_data_layers(training_data_dir):
+    all_files = os.listdir(training_data_dir)
+    all_files_size = len([num for num in all_files])
+    feature=[]
+    action=[]
+    counter = 0
+    print('Extracting files...')
+    for file in all_files:
+        print("{}/{}".format(counter+1,all_files_size), end='\r')
+        counter+=1
+        full_path = os.path.join(training_data_dir,file)
+        # Extract file code
+        with open (full_path) as csv_file:
+            reader = csv.reader(csv_file)
+            action = reader[0]
+            for layer in range(0, (len(reader)-1) / 12):
+                for row in range(0, const.ScreenSize()):
+                    feature[layer].append((layer*const.ScreenSize()) + row + 1])
+
+
+
+
+    print("{}/{}".format(counter,all_files_size))
+    inputs = np.expand_dims(feature, axis=3)
+
+    inputs = np.reshape(feature, (-1,const.InputSize(),const.InputSize(),1))
+    outputs = np.reshape(action, (-1,const.OutputSize()))
+
+    inputs = inputs.astype(np.int)
+    outputs = outputs.astype(np.float)
+
+    return [inputs,outputs]
 
 #Keras
 #Shape = Shape of input data
