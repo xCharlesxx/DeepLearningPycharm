@@ -60,41 +60,52 @@ def get_training_data(training_data_dir):
 def get_training_data_layers(training_data_dir):
     all_files = os.listdir(training_data_dir)
     all_files_size = len([num for num in all_files])
-    feature=[]
-    action=[]
+    inputs = []
+    outputs = []
     counter = 0
     print('Extracting files...')
     for file in all_files:
-        print("{}/{}".format(counter+1,all_files_size), end='\r')
-        counter+=1
-        full_path = os.path.join(training_data_dir,file)
+        print("{}/{}".format(counter+1, all_files_size), end='\r')
+        counter += 1
+        features = []
+        action = []
+        full_path = os.path.join(training_data_dir, file)
         # Extract file code
         with open (full_path) as csv_file:
             reader = csv.reader(csv_file)
-            action = reader[0]
-            for layer in range(0, (len(reader)-1) / 12):
-                for row in range(0, const.ScreenSize()):
-                    feature[layer].append((layer*const.ScreenSize()) + row + 1])
-
-
+            layer = 0
+            feature = []
+            for index, row in enumerate(reader):
+                if (index == 0):
+                    action = row
+                    continue
+                if ((index-1) % const.ScreenSize().y == 0 and index-1 != 0):
+                    layer += 1
+                    features.append(feature)
+                    feature = []
+                    continue
+                feature.append(row)
+            features.append(feature)
+        inputs.append(features)
+        outputs.append(action)
 
 
     print("{}/{}".format(counter,all_files_size))
-    inputs = np.expand_dims(feature, axis=3)
+    # inputs = np.expand_dims(feature, axis=3)
+    #
+    # inputs = np.reshape(feature, (-1, const.InputSize(), const.InputSize(), 1))
+    # outputs = np.reshape(action, (-1, const.OutputSize()))
+    #
+    # inputs = inputs.astype(np.int)
+    # outputs = outputs.astype(np.float)
 
-    inputs = np.reshape(feature, (-1,const.InputSize(),const.InputSize(),1))
-    outputs = np.reshape(action, (-1,const.OutputSize()))
-
-    inputs = inputs.astype(np.int)
-    outputs = outputs.astype(np.float)
-
-    return [inputs,outputs]
+    return [inputs, outputs]
 
 #Keras
 #Shape = Shape of input data
 #Dropout = Fraction rate of input inits to 0 at each update during training time, which prevents overfitting (0-1)
 def build_knet():
-
+    TD = get_training_data_layers("training_data")
     dropout = 0.2
     learning_rate = 1e-4
     decay = 1e-6

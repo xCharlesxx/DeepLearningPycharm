@@ -14,8 +14,17 @@ class Translator(object):
         newFeature = []
 
         result = np.argmax(stencil != 0)
-        stencilY = int(result / (const.ScreenSize()*2))
-        stencilX = result % stencilY
+        stencilY = int(result / (const.WorldSize().x*4))
+        stencilX = result % (const.WorldSize().x*4)
+        # steny = 0
+        # stenx = 0
+        # first = False
+        # for indexy, y in enumerate(stencil):
+        #     for indexx, x in enumerate(y):
+        #         if (x != 0 and first is False):
+        #             steny = indexy
+        #             stenx = indexx
+        #             first = True
 
         for index, layer in enumerate(featureLayers):
             if (index in used):

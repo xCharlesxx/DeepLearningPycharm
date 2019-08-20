@@ -138,7 +138,7 @@ class ObserverAgent(base_agent.BaseAgent):
 
 
     def step(self, time_step, info, act):
-        self.cam_pos_offset = [time_step.observation.camera_position[0] - (const.WorldSize('x')/2), time_step.observation.camera_position[1] - (const.WorldSize('y')/2)]
+        self.cam_pos_offset = [time_step.observation.camera_position[0] - (const.WorldSize().x/2), time_step.observation.camera_position[1] - (const.WorldSize().y/2)]
         #print(time_step.observation.camera_position)
         #print(self.cam_pos_offset)
         #print(time_step.observation.camera_position - self.cam_pos_offset)
@@ -182,7 +182,7 @@ class ObserverAgent(base_agent.BaseAgent):
 
         state["feature_layers"] = tFeatureLayers
         print("End")
-        print(datetime.datetime.now().time())
+        # print(datetime.datetime.now().time())
         # for y in tFeatureLayers:
         #    for x in y:
         #        output = ""
@@ -229,5 +229,5 @@ class NothingAgent(base_agent.BaseAgent):
         print("\n")
         print("W: {} H: {}".format(len(obs.observation.feature_screen[0][0]), len(obs.observation.feature_screen[0])))
         if (1 in obs.observation.available_actions):
-            return sc_action.FUNCTIONS.move_camera([const.MiniMapSize()/2,const.MiniMapSize()/2])
+            return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x/2,const.MiniMapSize().y/2])
         return sc_action.FUNCTIONS.no_op()

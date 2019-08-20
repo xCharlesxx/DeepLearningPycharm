@@ -27,10 +27,9 @@ flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
 flags.DEFINE_integer("batch", 1, "Size of replay batch for each process", lower_bound=1, upper_bound=512)
 
 class Parser: #612
-    screen_size_px=(const.WorldSize('x')*4, const.WorldSize('x')*4)
-    minimap_size_px=(const.WorldSize('x')*4, const.WorldSize('x')*4)
-    map_size=(153,148)
-    camera_width = 153 * 2
+    screen_size_px=(const.WorldSize().x*4, const.WorldSize().x*4)
+    minimap_size_px=(const.WorldSize().x*4, const.WorldSize().x*4)
+    camera_width = const.WorldSize().x * 2
 
     def __init__(self,
                  replay_file_path,
@@ -110,7 +109,7 @@ class Parser: #612
         #print("world_tl_to_world_camera_rel: {}\n\nworld_to_feature_screen_px: {}\n\nworld_to_world_tl: {}".format(_features._world_tl_to_world_camera_rel,
         #                                                                              _features._world_to_feature_screen_px,
         #                                                                              _features._world_to_world_tl))
-        _features.init_camera(features.Dimensions(self.screen_size_px,self.minimap_size_px), point.Point(*self.map_size), self.camera_width)
+        _features.init_camera(features.Dimensions(self.screen_size_px,self.minimap_size_px), point.Point(*const.WorldSize()), self.camera_width)
 
         while True:
             #Takes one step through the replay
