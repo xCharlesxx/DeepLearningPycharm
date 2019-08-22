@@ -182,7 +182,7 @@ class ObserverAgent(base_agent.BaseAgent):
 
         state["feature_layers"] = tFeatureLayers
         print("End")
-        # print(datetime.datetime.now().time())
+        print(datetime.datetime.now().time())
         # for y in tFeatureLayers:
         #    for x in y:
         #        output = ""

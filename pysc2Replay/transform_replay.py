@@ -40,7 +40,7 @@ class Parser: #612
 
         print("Parsing " + replay_file_path)
 
-        #self.replay_file_name = replay_file_path.split("/")[-1].split(".")[0]
+        self.replay_file_name = replay_file_path.split("\\")[-1].split(".")[0]
         self.agent = agent
         self.discount = discount
         #self.frames_per_game = frames_per_game
@@ -60,7 +60,7 @@ class Parser: #612
         _screen_size_px = point.Point(*self.screen_size_px)
         _minimap_size_px = point.Point(*self.minimap_size_px)
         interface = sc_pb.InterfaceOptions(
-            feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width,crop_to_playable_area=True),show_cloaked=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
+            feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width, crop_to_playable_area=True), show_cloaked=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
         _screen_size_px.assign_to(interface.feature_layer.resolution)
         _minimap_size_px.assign_to(interface.feature_layer.minimap_resolution)
 
@@ -158,14 +158,13 @@ class Parser: #612
             self._state = StepType.MID
 
         print("Saving data")
-        packageCounter = 0
         #print(self.info)
         #print(self.agent.states)
-        for state in self.agent.states:
-            fileName = '../training_data/' + str(packageCounter) + '.csv'
-            # dirname = os.path.dirname(fileName)
-            # if not os.path.exists(dirname):
-            #     os.makedirs(dirname)
+        for packageCounter, state in enumerate(self.agent.states):
+            fileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.csv'
+            dirname = os.path.dirname(fileName)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
             with open(fileName, mode='w', newline='') as file:
                 writer = csv.writer(file)
                 # writer.writerow(state['action'])
@@ -174,7 +173,6 @@ class Parser: #612
                     writer.writerow(action)
                 for layer in state['feature_layers']:
                     writer.writerows(layer)
-            packageCounter += 1
         #pickle.dump({"state" : self.agent.states}, open("C:/Users/LeoCharlie/PycharmProjects/DeepLearning/data/" + "Me" + ".txt", "wb"))
         print("Data successfully saved")
         self.agent.states = []

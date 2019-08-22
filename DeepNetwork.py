@@ -105,7 +105,7 @@ def get_training_data_layers(training_data_dir):
 #Shape = Shape of input data
 #Dropout = Fraction rate of input inits to 0 at each update during training time, which prevents overfitting (0-1)
 def build_knet():
-    TD = get_training_data_layers("training_data")
+    TD = get_training_data_layers("training_data/EdgeCaseTest")
     dropout = 0.2
     learning_rate = 1e-4
     decay = 1e-6

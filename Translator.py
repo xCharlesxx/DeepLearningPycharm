@@ -10,33 +10,17 @@ import datetime
 class Translator(object):
     def crop_feature_layers(self, stencil, featureLayers, new_width, new_height):
         # Remove unused layers
-        used = [0, 1, 2, 5, 6, 7, 9, 11, 14, 16]
-        newFeature = []
-
+        # used = [0, 1, 2, 5, 6, 7, 9, 11, 14, 16]
+        unused = [3, 4, 8, 10, 12, 13, 15]
         result = np.argmax(stencil != 0)
         stencilY = int(result / (const.WorldSize().x*4))
         stencilX = result % (const.WorldSize().x*4)
-        # steny = 0
-        # stenx = 0
-        # first = False
-        # for indexy, y in enumerate(stencil):
-        #     for indexx, x in enumerate(y):
-        #         if (x != 0 and first is False):
-        #             steny = indexy
-        #             stenx = indexx
-        #             first = True
-
-        for index, layer in enumerate(featureLayers):
-            if (index in used):
-                newLayer = np.zeros((new_height, new_width), int)
-                for numy, y in enumerate(newLayer):
-                    for numx, x in enumerate(y):
-                        newLayer[numy][numx] = layer[stencilY + numy][stencilX + numx]
-                newFeature.append(newLayer)
-
-        return newFeature   
+        featureLayers = np.delete(featureLayers, unused, axis=0)
+        return featureLayers[0:10, stencilY:stencilY + new_height, stencilX:stencilX + new_width]
 
     def translate_feature_layers(self, featurelayers):
+        # print("Translate")
+        # print(datetime.datetime.now().time())
         # This forces unit type to be defined by their index and then between 0 and 1
         unit_type = featurelayers[4]
         unit_type_compressed = np.zeros(featurelayers[4].shape, dtype=np.float)
@@ -45,11 +29,12 @@ class Translator(object):
                 if unit_type[y][x] > 0 and unit_type[y][x] in static_data.UNIT_TYPES:
                     unit_type_compressed[y][x] = static_data.UNIT_TYPES.index(unit_type[y][x]) / len(static_data.UNIT_TYPES)
 
+        # print("Normalize")
+        # print(datetime.datetime.now().time())
         newFeatureLayers = [
              featurelayers[0] / 255,               # height_map 0 - 256
              featurelayers[1] / 2,                 # visibility 0 - 2
              featurelayers[2],                     # creep 0 - 1
-           # featurelayers[3]                      # power 0 - 1
              (featurelayers[3] == 1).astype(int),  # own_units 0 - 1
              (featurelayers[3] == 3).astype(int),  # neutral_units 0 - 1
              (featurelayers[3] == 4).astype(int),  # enemy_units 0 - 1
@@ -57,12 +42,10 @@ class Translator(object):
              featurelayers[5],                     # selected 0 - 1
              featurelayers[6] / 255,               # unit_hit_points_ratio 0 - 256
              featurelayers[7] / 255,              # energy ratio 0 - 256
-          #  featurelayers[13] / 255,              # shields ratio 0 - 256
              featurelayers[8] / 15,               # unit_density 0 - 16
              featurelayers[9] / 15                # effects 0 - 16 << Categorical
         ]
         return newFeatureLayers
-
     #[0 "height_map", 
     # 1 "visibility_map", 
     # 2 "creep", 
