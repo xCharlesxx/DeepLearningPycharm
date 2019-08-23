@@ -20,7 +20,7 @@ import re
 import random
 from decimal import Decimal
 from Constants import const
-
+from ast import literal_eval
 
 def get_training_data(training_data_dir):
     all_files = os.listdir(training_data_dir)
@@ -78,19 +78,21 @@ def get_training_data_layers(training_data_dir):
             for index, row in enumerate(reader):
                 if (index == 0):
                     action = row
+                    action[0] = int(action[0])
+                    action[1] = int(action[1])
+                    action[2] = literal_eval(action[2])
                     continue
                 if ((index-1) % const.ScreenSize().y == 0 and index-1 != 0):
                     layer += 1
                     features.append(feature)
                     feature = []
                     continue
-                feature.append(row)
+                feature.append([float(i) for i in row])
             features.append(feature)
         inputs.append(features)
         outputs.append(action)
 
-
-    print("{}/{}".format(counter,all_files_size))
+    print("{}/{}".format(counter, all_files_size))
     # inputs = np.expand_dims(feature, axis=3)
     #
     # inputs = np.reshape(feature, (-1, const.InputSize(), const.InputSize(), 1))
@@ -105,7 +107,7 @@ def get_training_data_layers(training_data_dir):
 #Shape = Shape of input data
 #Dropout = Fraction rate of input inits to 0 at each update during training time, which prevents overfitting (0-1)
 def build_knet():
-    TD = get_training_data_layers("training_data/EdgeCaseTest")
+    #TD = get_training_data_layers("training_data/EdgeCaseTest")
     dropout = 0.2
     learning_rate = 1e-4
     decay = 1e-6

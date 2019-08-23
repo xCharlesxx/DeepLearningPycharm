@@ -24,7 +24,7 @@ from Constants import const
 from absl import app
 
 def main(unused_argv):
-    build_knet()
+    #build_knet()
     #build_transformer()
     #build_LSTM()
     #transform_replay
@@ -40,13 +40,13 @@ def main(unused_argv):
                          ], 
                 agent_interface_format=features.AgentInterfaceFormat(
                     #What resolution the player sees the world at 
-                    feature_dimensions=features.Dimensions(screen=const.ScreenSize().x, minimap=const.MiniMapSize().x),
+                    feature_dimensions=features.Dimensions(screen=const.ScreenSize(), minimap=const.MiniMapSize()),
                     #More indepth unit information
                     use_feature_units=True,
                     #Increase camera size to encompass whole map
-                    camera_width_world_units=const.WorldSize().x*1.15),
+                    camera_width_world_units=round(const.WorldSize().x)),
                 #Steps default is 8 per frame (168APM) (16 = 1 second)
-                step_mul=10,#175
+                step_mul=2000, # 175,
                 #Max steps per game (0 is infinite)
                 game_steps_per_episode=0,
                 #visualize pysc2 input layers 
@@ -54,7 +54,7 @@ def main(unused_argv):
                 #Play-back-time
                 realtime=False,
                 #Fog of War
-                disable_fog=False
+                #disable_fog=False,
            ) as env:
                 run_loop.run_loop([agent], env)
     except KeyboardInterrupt:

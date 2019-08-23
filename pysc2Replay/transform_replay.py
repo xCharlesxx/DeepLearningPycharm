@@ -60,7 +60,8 @@ class Parser: #612
         _screen_size_px = point.Point(*self.screen_size_px)
         _minimap_size_px = point.Point(*self.minimap_size_px)
         interface = sc_pb.InterfaceOptions(
-            feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width, crop_to_playable_area=True), show_cloaked=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
+            feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width),# crop_to_playable_area=True),
+                                                    show_cloaked=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
         _screen_size_px.assign_to(interface.feature_layer.resolution)
         _minimap_size_px.assign_to(interface.feature_layer.minimap_resolution)
 
@@ -109,7 +110,9 @@ class Parser: #612
         #print("world_tl_to_world_camera_rel: {}\n\nworld_to_feature_screen_px: {}\n\nworld_to_world_tl: {}".format(_features._world_tl_to_world_camera_rel,
         #                                                                              _features._world_to_feature_screen_px,
         #                                                                              _features._world_to_world_tl))
-        _features.init_camera(features.Dimensions(self.screen_size_px,self.minimap_size_px), point.Point(*const.WorldSize()), self.camera_width)
+        # _features.init_camera(features.Dimensions(self.screen_size_px, self.minimap_size_px),
+        #                       point.Point(*const.WorldSize()),
+        #                       self.camera_width)
 
         while True:
             #Takes one step through the replay
@@ -139,6 +142,7 @@ class Parser: #612
                         # Check if the action is on a Micro Unit
                         if (const.IsMicroUnit(agent_obs.single_select) or const.IsMicroUnit(agent_obs.multi_select)):
                             # Record action
+                            print(_features._world_tl_to_world_camera_rel.offset)
                             self.agent.states.append(self.agent.step(step, self.info, _features.reverse_action(action)))
                         break
                         #print("%s: %s" % (len(agent_obs.multi_select), units.Zerg(agent_obs.multi_select[0][0])))
