@@ -61,7 +61,7 @@ class Parser: #612
         _minimap_size_px = point.Point(*self.minimap_size_px)
         interface = sc_pb.InterfaceOptions(
             feature_layer=sc_pb.SpatialCameraSetup(width=self.camera_width),# crop_to_playable_area=True),
-                                                    show_cloaked=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
+                                                    show_cloaked=True, raw=True)#, raw_affects_selection=True,raw_crop_to_playable_area=True)
         _screen_size_px.assign_to(interface.feature_layer.resolution)
         _minimap_size_px.assign_to(interface.feature_layer.minimap_resolution)
 
@@ -142,7 +142,7 @@ class Parser: #612
                         # Check if the action is on a Micro Unit
                         if (const.IsMicroUnit(agent_obs.single_select) or const.IsMicroUnit(agent_obs.multi_select)):
                             # Record action
-                            print(_features._world_tl_to_world_camera_rel.offset)
+                            #print(_features._world_tl_to_world_camera_rel.offset)
                             self.agent.states.append(self.agent.step(step, self.info, _features.reverse_action(action)))
                         break
                         #print("%s: %s" % (len(agent_obs.multi_select), units.Zerg(agent_obs.multi_select[0][0])))
@@ -169,6 +169,9 @@ class Parser: #612
             dirname = os.path.dirname(fileName)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
+            outarr = np.array(state['action'])
+            for layer in state['feature_layers']:
+                outarr = np.append(outarr, layer)
             with open(fileName, mode='w', newline='') as file:
                 writer = csv.writer(file)
                 # writer.writerow(state['action'])

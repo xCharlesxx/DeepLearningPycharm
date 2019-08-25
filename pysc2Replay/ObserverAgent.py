@@ -98,18 +98,18 @@ class ObserverAgent(base_agent.BaseAgent):
         return newInput
 
     def select_point(self, args):
-        return list((int(args[0][0]), [(args[1][0]*2) + self.cam_pos_offset[0], (args[1][1]*2) + self.cam_pos_offset[1]]))
+        return list((int(args[0][0]), [(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]]))
 
     def single_select_point(self, args):
-        return list((0, [(args[1][0]*2) + self.cam_pos_offset[0], (args[1][1]*2) + self.cam_pos_offset[1]]))
+        return list((0, [(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]]))
 
     def double_select_point(self, args):
         ##TODO if any of the values are the same
         if (args[1] == args[2]):
             return "Unknown"
         list = [0]
-        list.append([(args[1][0]*2) + self.cam_pos_offset[0], (args[1][1]*2) + self.cam_pos_offset[1]])
-        list.append([(args[2][0]*2) + self.cam_pos_offset[0], (args[2][1]*2) + self.cam_pos_offset[1]])
+        list.append([(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]])
+        list.append([(args[2][0]/2) + self.cam_pos_offset[0], (args[2][1]/2) + self.cam_pos_offset[1]])
         return list
     def single_q(self, args):
         return [0]
