@@ -50,7 +50,7 @@ def main(unused_argv):
                 #Max steps per game (0 is infinite)
                 game_steps_per_episode=0,
                 #visualize pysc2 input layers 
-                visualize=True, 
+                visualize=False,
                 #Play-back-time
                 realtime=False,
                 #Fog of War

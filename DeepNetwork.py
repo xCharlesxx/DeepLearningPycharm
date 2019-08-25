@@ -70,27 +70,30 @@ def get_training_data_layers(training_data_dir):
         features = []
         action = []
         full_path = os.path.join(training_data_dir, file)
+        inarr = np.load(full_path, allow_pickle=True)
+        outputs.append(inarr[0][0])
+        inputs.append(inarr[1:][0])
         # Extract file code
-        with open (full_path) as csv_file:
-            reader = csv.reader(csv_file)
-            layer = 0
-            feature = []
-            for index, row in enumerate(reader):
-                if (index == 0):
-                    action = row
-                    action[0] = int(action[0])
-                    action[1] = int(action[1])
-                    action[2] = literal_eval(action[2])
-                    continue
-                if ((index-1) % const.ScreenSize().y == 0 and index-1 != 0):
-                    layer += 1
-                    features.append(feature)
-                    feature = []
-                    continue
-                feature.append([float(i) for i in row])
-            features.append(feature)
-        inputs.append(features)
-        outputs.append(action)
+        # with open (full_path) as csv_file:
+        #     reader = csv.reader(csv_file)
+        #     layer = 0
+        #     feature = []
+        #     for index, row in enumerate(reader):
+        #         if (index == 0):
+        #             action = row
+        #             action[0] = int(action[0])
+        #             action[1] = int(action[1])
+        #             action[2] = literal_eval(action[2])
+        #             continue
+        #         if ((index-1) % const.ScreenSize().y == 0 and index-1 != 0):
+        #             layer += 1
+        #             features.append(feature)
+        #             feature = []
+        #             continue
+        #         feature.append([float(i) for i in row])
+        #     features.append(feature)
+        # inputs.append(features)
+        # outputs.append(action)
 
     print("{}/{}".format(counter, all_files_size))
     # inputs = np.expand_dims(feature, axis=3)

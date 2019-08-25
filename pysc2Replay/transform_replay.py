@@ -166,20 +166,23 @@ class Parser: #612
         #print(self.agent.states)
         for packageCounter, state in enumerate(self.agent.states):
             fileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.csv'
+            npFileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.npy'
             dirname = os.path.dirname(fileName)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-            outarr = np.array(state['action'])
+            outarr = []
+            outarr.append(state['action'])
             for layer in state['feature_layers']:
-                outarr = np.append(outarr, layer)
-            with open(fileName, mode='w', newline='') as file:
-                writer = csv.writer(file)
-                # writer.writerow(state['action'])
-                # writer.writerows(state['feature_layers'])
-                for action in state['action']:
-                    writer.writerow(action)
-                for layer in state['feature_layers']:
-                    writer.writerows(layer)
+                outarr.append(layer)
+            np.save(npFileName, outarr)
+            # with open(fileName, mode='w', newline='') as file:
+            #     writer = csv.writer(file)
+            #     # writer.writerow(state['action'])
+            #     # writer.writerows(state['feature_layers'])
+            #     for action in state['action']:
+            #         writer.writerow(action)
+            #     for layer in state['feature_layers']:
+            #         writer.writerows(layer)
         #pickle.dump({"state" : self.agent.states}, open("C:/Users/LeoCharlie/PycharmProjects/DeepLearning/data/" + "Me" + ".txt", "wb"))
         print("Data successfully saved")
         self.agent.states = []
