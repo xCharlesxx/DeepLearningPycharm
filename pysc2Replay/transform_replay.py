@@ -106,13 +106,20 @@ class Parser: #612
     def start(self):
         print("Hello we are in Start")
         step_mul = 1
-        _features = features.features_from_game_info(self.controller.game_info(), use_feature_units=True, use_camera_position=True)
+        _features = features.features_from_game_info(self.controller.game_info(), use_camera_position=True)
         #print("world_tl_to_world_camera_rel: {}\n\nworld_to_feature_screen_px: {}\n\nworld_to_world_tl: {}".format(_features._world_tl_to_world_camera_rel,
         #                                                                              _features._world_to_feature_screen_px,
         #                                                                              _features._world_to_world_tl))
         # _features.init_camera(features.Dimensions(self.screen_size_px, self.minimap_size_px),
         #                       point.Point(*const.WorldSize()),
         #                       self.camera_width)
+        packageCounter = 0
+        fileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.csv'
+        npFileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.npy'
+        npFileNameComp = '../training_data/' + self.replay_file_name + "/" + str(packageCounter)
+        dirname = os.path.dirname(fileName)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
 
         while True:
             #Takes one step through the replay
@@ -143,7 +150,13 @@ class Parser: #612
                         if (const.IsMicroUnit(agent_obs.single_select) or const.IsMicroUnit(agent_obs.multi_select)):
                             # Record action
                             #print(_features._world_tl_to_world_camera_rel.offset)
-                            self.agent.states.append(self.agent.step(step, self.info, _features.reverse_action(action)))
+                            #self.agent.states.append(self.agent.step(step, self.info, _features.reverse_action(action)))
+                            state = self.agent.step(step, self.info, _features.reverse_action(action))
+                            if state != 0:
+                                npFileNameComp = '../training_data/' + self.replay_file_name + "/" + str(packageCounter)
+                                np.savez_compressed(npFileNameComp, action=state["action"],
+                                                                    feature_layers=state["feature_layers"])
+                                packageCounter += 1
                         break
                         #print("%s: %s" % (len(agent_obs.multi_select), units.Zerg(agent_obs.multi_select[0][0])))
                         #print(action)
@@ -161,33 +174,33 @@ class Parser: #612
 
             self._state = StepType.MID
 
-        print("Saving data")
-        #print(self.info)
-        #print(self.agent.states)
-        for packageCounter, state in enumerate(self.agent.states):
-            fileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.csv'
-            npFileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.npy'
-            dirname = os.path.dirname(fileName)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname)
-            outarr = []
-            outarr.append(state['action'])
-            for layer in state['feature_layers']:
-                outarr.append(layer)
-            np.save(npFileName, outarr)
-            # with open(fileName, mode='w', newline='') as file:
-            #     writer = csv.writer(file)
-            #     # writer.writerow(state['action'])
-            #     # writer.writerows(state['feature_layers'])
-            #     for action in state['action']:
-            #         writer.writerow(action)
-            #     for layer in state['feature_layers']:
-            #         writer.writerows(layer)
-        #pickle.dump({"state" : self.agent.states}, open("C:/Users/LeoCharlie/PycharmProjects/DeepLearning/data/" + "Me" + ".txt", "wb"))
-        print("Data successfully saved")
-        self.agent.states = []
-        print("Data flushed")
-        print("Done")
+        # print("Saving data")
+        # #print(self.info)
+        # #print(self.agent.states)
+        # for packageCounter, state in enumerate(self.agent.states):
+        #     fileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.csv'
+        #     npFileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.npy'
+        #     dirname = os.path.dirname(fileName)
+        #     if not os.path.exists(dirname):
+        #         os.makedirs(dirname)
+        #     outarr = []
+        #     outarr.append(state['action'])
+        #     for layer in state['feature_layers']:
+        #         outarr.append(layer)
+        #     np.save(npFileName, outarr)
+        #     # with open(fileName, mode='w', newline='') as file:
+        #     #     writer = csv.writer(file)
+        #     #     # writer.writerow(state['action'])
+        #     #     # writer.writerows(state['feature_layers'])
+        #     #     for action in state['action']:
+        #     #         writer.writerow(action)
+        #     #     for layer in state['feature_layers']:
+        #     #         writer.writerows(layer)
+        # #pickle.dump({"state" : self.agent.states}, open("C:/Users/LeoCharlie/PycharmProjects/DeepLearning/data/" + "Me" + ".txt", "wb"))
+        # print("Data successfully saved")
+        # self.agent.states = []
+        # print("Data flushed")
+        # print("Done")
 
 def parse_replay(replay_batch, agent_module, agent_cls):
     for replay in replay_batch:

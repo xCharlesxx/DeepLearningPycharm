@@ -71,8 +71,8 @@ def get_training_data_layers(training_data_dir):
         action = []
         full_path = os.path.join(training_data_dir, file)
         inarr = np.load(full_path, allow_pickle=True)
-        outputs.append(inarr[0][0])
-        inputs.append(inarr[1:][0])
+        outputs.append(inarr['action'][0])
+        inputs.append(inarr['feature_layers'])
         # Extract file code
         # with open (full_path) as csv_file:
         #     reader = csv.reader(csv_file)
