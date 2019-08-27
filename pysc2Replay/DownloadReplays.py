@@ -16,7 +16,7 @@ import sys
 import mpyq
 from six import print_ as print  # To get access to `flush` in python 2.
 
-API_BASE_URL = 'https://us.api.blizzard.com'
+API_BASE_URL = 'https://eu.api.blizzard.com'
 API_NAMESPACE = 's2-client-replays'
 
 
@@ -35,7 +35,7 @@ class BnetAPI(object):
         params = {
             "grant_type": "client_credentials"
         }
-        response = requests.post("https://us.battle.net/oauth/token", headers=headers, params=params, auth=requests.auth.HTTPBasicAuth(key, secret))
+        response = requests.post("https://eu.battle.net/oauth/token", headers=headers, params=params, auth=requests.auth.HTTPBasicAuth(key, secret))
         if response.status_code != requests.codes.ok:
             raise Exception('Failed to get oauth access token. response={}'.format(response))
         response = json.loads(response.text)
@@ -165,7 +165,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--key', default='ed85aedc81834cfd998804598eb2ec42', help='Battle.net API key.')
     parser.add_argument('--secret', default='b5e2uu2TWMYvlliHdTW12oj4zQv2oVk8', help='Battle.net API secret.')
-    parser.add_argument('--version', default='4.8.0', help='Download all replays from this StarCraft 2 game version, eg: "4.8.3".')
+    parser.add_argument('--version', default='4.10.1', help='Download all replays from this StarCraft 2 game version, eg: "4.8.3".')
     parser.add_argument('--replays_dir', default='./replays', help='Where to save the replays.')
     parser.add_argument('--download_dir', default='./download', help='Where to save the zip files.')
     parser.add_argument('--extract', action='store_true', help='Whether to extract the zip files.')

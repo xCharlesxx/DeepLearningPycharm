@@ -34,6 +34,10 @@ class ObserverAgent(base_agent.BaseAgent):
                 12: self.single_select_point,
                 14: self.single_select_point,
                 16: self.single_select_point,
+                #Creep tumour
+                45: self.single_select_point,
+                46: self.single_select_point,
+                47: self.single_select_point,
                 #Inject larve
                 204: self.single_select_point,
                 #Burrow down
@@ -105,13 +109,14 @@ class ObserverAgent(base_agent.BaseAgent):
 
     def double_select_point(self, args):
         if (args[1] == args[2]):
-            return self.single_select_point(args[:-1])
-        list = [0]
+            return "Unknown"
+            #return self.single_select_point(args[:-1])
+        list = [[0]]
         list.append([(args[1][0]/2) + (self.cam_pos_offset[0]*2), (args[1][1]/2) + (self.cam_pos_offset[1]*2)])
         list.append([(args[2][0]/2) + (self.cam_pos_offset[0]*2), (args[2][1]/2) + (self.cam_pos_offset[1]*2)])
         return list
     def single_q(self, args):
-        return [0]
+        return [[0]]
     def default(self, args):
         return "Unknown"
 
@@ -128,7 +133,7 @@ class ObserverAgent(base_agent.BaseAgent):
             id = '117'
 
         if (id in [452, 13, 17]):
-            return [id, 0, [args[1][0] / 2, args[1][1] / 2]]
+            return [id, [0], [args[1][0] / 2, args[1][1] / 2]]
 
         func = self.action_dict.get(id, self.default)
         output = func(args)
