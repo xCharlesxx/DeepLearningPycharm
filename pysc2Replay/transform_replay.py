@@ -2,7 +2,9 @@ from pysc2.lib import features, point, remote_controller, actions, units
 from absl import app, flags
 from pysc2.env.environment import TimeStep, StepType
 from pysc2 import run_configs
+from pysc2.run_configs.lib import version_dict
 from s2clientprotocol import sc2api_pb2 as sc_pb
+from s2clientprotocol import common_pb2 as sc_common
 import importlib
 import glob
 from random import randint
@@ -15,12 +17,12 @@ import numpy as np
 import multiprocessing
 import sys, os, csv
 from Constants import const
-
+from fnmatch import fnmatch
 cpus = multiprocessing.cpu_count()
 
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
-flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\Test", "Path to the replay files.")
+flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\493KC\\", "Path to the replay files.")
 flags.DEFINE_string("agent", "ObserverAgent.ObserverAgent", "Path to an agent.")
 flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
@@ -30,11 +32,10 @@ class Parser: #612
     screen_size_px=(const.WorldSize().x*4, const.WorldSize().x*4)
     minimap_size_px=(const.WorldSize().x*4, const.WorldSize().x*4)
     camera_width = const.WorldSize().x * 2
-
+    player_id = 1
     def __init__(self,
                  replay_file_path,
                  agent,
-                 player_id=1,
                  discount=1.):
                  #frames_per_game=1):
 
@@ -47,14 +48,18 @@ class Parser: #612
 
         self.run_config = run_configs.get()
         versions = self.run_config.get_versions()
+        self.sc2_proc = self.run_config.start(version=versions['4.9.3'])
 
-        self.sc2_proc = self.run_config.start()
         self.controller = self.sc2_proc.controller
-
-        replay_data = self.run_config.replay_data(replay_file_path)
         ping = self.controller.ping()
-        self.info = self.controller.replay_info(replay_data)
-        if not self._valid_replay(self.info, ping):
+        replay_data = self.run_config.replay_data(replay_file_path)
+
+        try:
+            self.info = self.controller.replay_info(replay_data)
+        except Exception as e:
+            raise Exception(e)
+
+        if not self._valid_replay(self, self.info, ping):
             raise Exception("{} is not a valid replay file!".format(replay_file_path))
 
         _screen_size_px = point.Point(*self.screen_size_px)
@@ -76,12 +81,12 @@ class Parser: #612
             replay_data=replay_data,
             map_data=map_data,
             options=interface,
-            observed_player_id=player_id))
+            observed_player_id=self.player_id))
 
         self._state = StepType.FIRST
 
     @staticmethod
-    def _valid_replay(info, ping):
+    def _valid_replay(self, info, ping):
         """Make sure the replay isn't corrupt, and is worth looking at."""
         if (info.HasField("error")):
             print("Replay has field: Error")
@@ -89,13 +94,33 @@ class Parser: #612
         if (info.base_build != ping.base_build): # different game version
            print("Build Mismatch:\nBase: {}\nReplay: {}".format(ping.base_build, info.base_build))
            return False 
-        if (info.game_duration_loops < 10):
+        if (info.game_duration_loops < 100):
             print("Replay not long enough, loops: {}".format(info.game_duration_loops))
             return False
         if (len(info.player_info) != 2):
             print("Replay: Possible corruption")
-            # Probably corrupt, or just not interesting.
             return False
+        if (info.map_name != 'King\'s Cove LE'):
+            print("Replay: Not defined map")
+            #return False
+
+        player1 = sc_common.Race.Name(info.player_info[0].player_info.race_actual)
+        player2 = sc_common.Race.Name(info.player_info[1].player_info.race_actual)
+        result = sc_pb.Result.Name(info.player_info[0].player_result.result)
+        if (sc_common.Race.Name(info.player_info[0].player_info.race_actual) == 'Zerg' and
+                sc_common.Race.Name(info.player_info[1].player_info.race_actual) != 'Protoss'):
+            self.player_id = 1
+        elif (sc_common.Race.Name(info.player_info[0].player_info.race_actual) != 'Protoss' and
+              sc_common.Race.Name(info.player_info[1].player_info.race_actual) == 'Zerg'):
+            self.player_id = 2
+        else:
+            print("Replay: Incorrect race match-up")
+            return False
+        if (info.player_info[self.player_id-1].player_mmr < 1000):
+            print("Low MMR player")
+        if (sc_pb.Result.Name(info.player_info[0].player_result.result) != 'Victory'):
+            print("Replay: Player 1 does not win")
+
 #   for p in info.player_info:
 #       if p.player_apm < 10 or p.player_mmr < 1000:
 #           # Low APM = player just standing around.
@@ -120,7 +145,7 @@ class Parser: #612
         dirname = os.path.dirname(fileName)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-
+        self.controller.act()
         while True:
             #Takes one step through the replay
             self.controller.step(step_mul)
@@ -215,9 +240,9 @@ def parse_replay(replay_batch, agent_module, agent_cls):
 def main(unused):
     agent_module, agent_name = FLAGS.agent.rsplit(".", 1)
     agent_cls = getattr(importlib.import_module(agent_module), agent_name)
-    processes = 1#FLAGS.procs
+    processes = 1#int(FLAGS.procs / 2)
     replay_folder = FLAGS.replays
-    batch_size = 1#FLAGS.batch
+    batch_size = FLAGS.batch
 
     truePath = os.path.join(replay_folder, '*.SC2Replay')
     replays = glob.glob(truePath, recursive=True)

@@ -33,7 +33,7 @@ def main(unused_argv):
     try: 
         while True:
             with sc2_env.SC2Env(False,
-                map_name = 'KingsCove',
+                map_name = 'AbyssalReef',
                 players= [
                         sc2_env.Agent(sc2_env.Race.zerg),
                         sc2_env.Bot(sc2_env.Race.zerg, sc2_env.Difficulty.very_easy)
@@ -50,7 +50,7 @@ def main(unused_argv):
                 #Max steps per game (0 is infinite)
                 game_steps_per_episode=0,
                 #visualize pysc2 input layers 
-                visualize=False,
+                visualize=True,
                 #Play-back-time
                 realtime=False,
                 #Fog of War
