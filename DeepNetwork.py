@@ -43,69 +43,198 @@ def get_training_data(training_data_dir):
                     outputs.append(row)
                 else:
                     inputrows.append(row)
-                count+=1
+                count += 1
             inputs.append(inputrows)
 
-    print("{}/{}".format(counter,all_files_size))
+    print("{}/{}".format(counter, all_files_size))
     inputs = np.expand_dims(inputs, axis=3)
 
-    inputs = np.reshape(inputs, (-1,const.InputSize(),const.InputSize(),1))
-    outputs = np.reshape(outputs, (-1,const.OutputSize()))
+    inputs = np.reshape(inputs, (-1, const.InputSize(), const.InputSize(), 1))
+    outputs = np.reshape(outputs, (-1, const.OutputSize()))
 
     inputs = inputs.astype(np.int)
     outputs = outputs.astype(np.float)
 
-    return [inputs,outputs]
-
-def get_training_data_layers(training_data_dir):
-    all_files = os.listdir(training_data_dir)
-    all_files_size = len([num for num in all_files])
-    inputs = []
-    outputs = []
-    counter = 0
-    print('Extracting files...')
-    for file in all_files:
-        print("{}/{}".format(counter+1, all_files_size), end='\r')
-        counter += 1
-        features = []
-        action = []
-        full_path = os.path.join(training_data_dir, file)
-        inarr = np.load(full_path, allow_pickle=True)
-        outputs.append(inarr['action'][0])
-        inputs.append(inarr['feature_layers'])
-        # Extract file code
-        # with open (full_path) as csv_file:
-        #     reader = csv.reader(csv_file)
-        #     layer = 0
-        #     feature = []
-        #     for index, row in enumerate(reader):
-        #         if (index == 0):
-        #             action = row
-        #             action[0] = int(action[0])
-        #             action[1] = int(action[1])
-        #             action[2] = literal_eval(action[2])
-        #             continue
-        #         if ((index-1) % const.ScreenSize().y == 0 and index-1 != 0):
-        #             layer += 1
-        #             features.append(feature)
-        #             feature = []
-        #             continue
-        #         feature.append([float(i) for i in row])
-        #     features.append(feature)
-        # inputs.append(features)
-        # outputs.append(action)
-
-    print("{}/{}".format(counter, all_files_size))
-    # inputs = np.expand_dims(feature, axis=3)
-    #
-    # inputs = np.reshape(feature, (-1, const.InputSize(), const.InputSize(), 1))
-    # outputs = np.reshape(action, (-1, const.OutputSize()))
-    #
-    # inputs = inputs.astype(np.int)
-    # outputs = outputs.astype(np.float)
-
     return [inputs, outputs]
 
+def get_training_data_dirs(training_data_dir):
+    all_folders = os.listdir(training_data_dir)
+    all_files = []
+    for folder in all_folders:
+        for file in os.listdir(os.path.join(training_data_dir, folder)):
+            all_files.append(os.path.join(training_data_dir, folder, file))
+    all_files_size = len([num for num in all_files])
+    return all_files
+
+
+def extract_data_dirs(dirs, num):
+    inputs = []
+    outputs = []
+    print('Extracting files...')
+    for file in range(0, num):
+        #print('\r', end='')
+        #print("{}/{}".format(counter+1, all_files_size), end='')
+
+        inarr = np.load(dirs[file], allow_pickle=True)
+        outputs.append(translate_outputs_to_NN(inarr['action'][0]))
+        inputs.append(inarr['feature_layers'])
+        n = np.array(inputs)
+        z = np.array(outputs)
+
+        #print("{}/{}".format(counter, all_files_size))
+    return [inputs, outputs]
+
+
+def translate_outputs_to_NN(output):
+    trans_outputs = np.zeros([12], float)
+    position = 0;
+    for cell in output:
+        try:
+            for xy in cell:
+                translated = position_translation(position, xy)
+                if (translated[1] > 1 or translated[1] < 0):
+                    print("Something went wrong in translate_outputs")
+                else:
+                    trans_outputs[translated[0]] = translated[1]
+                    position += 1
+                    #print("{} -> {}".format(xy, translated))
+        except TypeError:
+            translated = position_translation(position, cell)
+            if (translated[1] > 1 or translated[1] < 0):
+                print("Something went wrong in translate_outputs")
+            else:
+                trans_outputs[translated[0]] = translated[1]
+                position += 1
+                #print("{} -> {}".format(cell, translated))
+    if (output[0] in ability_dict):
+        trans_outputs[11] = ability_dict[output[0]]
+    return trans_outputs
+def position_translation(position, value):
+    #Action
+    if (position == 0):
+        #Select point
+        if (value in [2, 451, 452]):
+            return [0, 1]
+        #Attack point
+        elif (value in [13, 17, 12, 14, 16]):
+            return [1, 1]
+        #Select rect
+        elif (value in [3]):
+            return [2, 1]
+        #Hold pos
+        elif (value in [274,453]):
+            return [3, 1]
+        #Select army
+        elif (value in [7]):
+            return [4, 1]
+        #Use ability
+        else:
+            return [5, 1]
+    #Stack action
+    if (position == 1):
+        return [7, value[0] / 4]
+    #Coordinates
+    if (position >= 2):
+        return [position + 5, value / const.ScreenSize().x]
+    print("Something went wrong in position_translation")
+    return 0
+ability_dict = {
+    #inject
+    204: 0,
+    #tumour
+    45: 0.5,
+    46: 0.5,
+    47: 0.5,
+    # transfuse
+    242: 1,
+    # blinding cloud
+    179: 0,
+    #Abduct
+    176: 0.3,
+    #parasidic bomb
+    215: 0.6,
+    # viper consume
+    243: 0.1,
+    #Caustic spray
+    184: 1,
+    # corrosive bile
+    188: 0.5,
+    #explode
+    191: 0.5,
+    #fungal growth
+    194: 0,
+    #infested terrans
+    203: 0.5,
+    #neural parasite
+    212: 1,
+    #changeling
+    215: 0,
+    # contaminate
+    188: 1,
+    #locusts
+    229: 0.5,
+    #burrow down
+    103: 0.9,
+    #burrow up
+    117: 1.0,
+}
+# select point
+# 2: self.select_point,
+# # select rect
+# 3: self.double_select_point,
+# # smart minimap
+# 452: self.single_select_point,
+# # attack minimap
+# 13: self.single_select_point,
+# 17: self.single_select_point,
+# # smart screen
+# 451: self.single_select_point,
+# # attack screen
+# 12: self.single_select_point,
+# 14: self.single_select_point,
+# 16: self.single_select_point,
+# # Creep tumour
+# 45: self.single_select_point,
+# 46: self.single_select_point,
+# 47: self.single_select_point,
+# # Inject larve
+# 204: self.single_select_point,
+# # Burrow down
+# 103: self.single_q,
+# # Burrow up
+# 117: self.single_q,
+# # Blinding cloud
+# 179: self.single_select_point,
+# # Caustic spray
+# 184: self.single_select_point,
+# # Contaminate
+# 188: self.single_select_point,
+# # Corrosive bile
+# 189: self.single_select_point,
+# # Explode
+# 191: self.single_q,
+# # fungal growth
+# 194: self.single_select_point,
+# # infested terrans
+# 203: self.single_select_point,
+# # transfuse
+# 242: self.single_select_point,
+# # neural parasite
+# 212: self.single_select_point,
+# # parasidic bomb
+# 215: self.single_select_point,
+# # spawn changeling
+# 228: self.single_q,
+# # spawn locusts
+# 229: self.single_select_point,
+# # viper consume
+# 243: self.single_select_point,
+# # hold position quick
+# 274: self.single_q,
+# # stop quick
+# 453: self.single_q,
+# # select army
+# 7: self.single_q
 #Keras
 #Shape = Shape of input data
 #Dropout = Fraction rate of input inits to 0 at each update during training time, which prevents overfitting (0-1)
@@ -203,15 +332,8 @@ def build_LSTM():
     padding = 'same'
     activation = 'relu'
     model = Sequential()
-    input = [features.Dimensions.screen,
-             features.Dimensions.screen,
-             features.Dimensions.screen,
-             features.Dimensions.screen,
-             features.Dimensions.screen,
-             features.Dimensions.screen,
-             features.Dimensions.screen,
-             features.Dimensions.screen,]
-    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(input),
+
+    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(1, 12, 352, 352),
                     activation=activation))
     model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
     model.add(Dropout(0.3))
@@ -220,28 +342,42 @@ def build_LSTM():
                      activation=activation))
     model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
     model.add(Dropout(0.3))
-
+    model.summary()
     model.add(Conv2D(256, kernel_size=(3, 3), activation=activation))
     model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
     model.add(Dropout(0.3))
     model.add(Flatten())
-
+    model.summary()
     model.add(Dense(256, activation=activation))
     model.add(Reshape((1, 256)))
     # Add some memory
     model.add(LSTM(256))
-    model.add(Dense(2, activation=activation))
+    model.add(Dense(11, activation=activation))
     model.compile(loss='mean_squared_error',
                   optimizer="adam",
                   metrics=["accuracy"])
 
-    TD = get_training_data("raw_training_data")
-    model.fit(TD[0], TD[1],
-            batch_size=2,
-            epochs=10,
-            validation_split=0.1,
-            shuffle=False, verbose=1)
+    TDDs = get_training_data_dirs("training_data")
+    batchSize = 500
+    #Whilst there's still data to train on
+    while (TDDs > 0):
+        if len(TDDs) < batchSize:
+            TD = extract_data_dirs(TDDs, len(TDDs))
+            TDDs.clear()
+            model.fit(TD[0], TD[1],
+                      batch_size=1,
+                      epochs=10,
+                      validation_split=0.1,
+                      shuffle=False, verbose=1)
+        else:
+            TD = extract_data_dirs(TDDs, batchSize)
+            TDDs = TDDs[batchSize:]
 
+            model.fit(TD[0], TD[1],
+                    batch_size=1,
+                    epochs=10,
+                    validation_split=0.1,
+                    shuffle=False, verbose=1)
     model.save("LSTM84")
     return model
 

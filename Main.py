@@ -26,7 +26,7 @@ from absl import app
 def main(unused_argv):
     #build_knet()
     #build_transformer()
-    #build_LSTM()
+    build_LSTM()
     #transform_replay
     #Agent
     agent = NothingAgent()

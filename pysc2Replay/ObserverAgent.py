@@ -9,7 +9,6 @@ from pysc2.lib import static_data
 from pysc2.agents import base_agent
 from Constants import const
 from Translator import Translator
-from DeepNetwork import get_training_data_layers
 
 import datetime
 class ObserverAgent(base_agent.BaseAgent):
@@ -46,6 +45,8 @@ class ObserverAgent(base_agent.BaseAgent):
                 117: self.single_q,
                 #Blinding cloud 
                 179: self.single_select_point,
+                #Abduct Screen
+                176: self.single_select_point,
                 #Caustic spray 
                 184: self.single_select_point,
                 #Contaminate 
@@ -224,13 +225,15 @@ class ObserverAgent(base_agent.BaseAgent):
 
 
 class NothingAgent(base_agent.BaseAgent):
-    # inputs = []
-    # first = True
-    # second = True
-     def step(self, obs):
-    #     #print(obs.observation.available_actions)
-    #     if len(self.inputs) == 0:
-    #         self.inputs = get_training_data_layers("training_data/ExtensiveTest")[1]
+    inputs = []
+    outputs = []
+
+    def __init__(self):
+        TD = get_training_data_layers("training_data/")
+        self.inputs = TD[0]
+        self.outputs = TD[1]
+
+    def step(self, obs):
         height = 0
         for x in obs.observation.feature_screen[6]:
             output = ""
@@ -243,16 +246,16 @@ class NothingAgent(base_agent.BaseAgent):
             height += 1
         #print("\n")
         print("W: {} H: {}".format(len(obs.observation.feature_screen[0][0]), len(obs.observation.feature_screen[0])))
-    #     if (self.first):
-    #         if (1 in obs.observation.available_actions):
-    #             self.first = False
-    #             #self.inputs.pop(0)
-    #             return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x/2,const.MiniMapSize().y/2])
-    #     elif (self.inputs[0][0] in obs.observation.available_actions):
-    #         action = self.inputs.pop(0)
-    #         #if action[0] != 452:
-    #         print("Made action: {}".format(action))
-    #         return sc_action.FunctionCall(action[0], action[1:])
-    #     self.inputs.pop(0)
-    #    return sc_action.FUNCTIONS.no_op()
+        #     if (self.first):
+        #         if (1 in obs.observation.available_actions):
+        #             self.first = False
+        #             #self.inputs.pop(0)
+        #             return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x/2,const.MiniMapSize().y/2])
+        #     elif (self.inputs[0][0] in obs.observation.available_actions):
+        #         action = self.inputs.pop(0)
+        #         #if action[0] != 452:
+        #         print("Made action: {}".format(action))
+        #         return sc_action.FunctionCall(action[0], action[1:])
+        #     self.inputs.pop(0)
+        #    return sc_action.FUNCTIONS.no_op()
         return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])

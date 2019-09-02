@@ -17,12 +17,14 @@ import numpy as np
 import multiprocessing
 import sys, os, csv
 from Constants import const
+
+
 from fnmatch import fnmatch
 cpus = multiprocessing.cpu_count()
 
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
-flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\493KC\\", "Path to the replay files.")
+flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\Test\\", "Path to the replay files.")
 flags.DEFINE_string("agent", "ObserverAgent.ObserverAgent", "Path to an agent.")
 flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
@@ -48,7 +50,7 @@ class Parser: #612
 
         self.run_config = run_configs.get()
         versions = self.run_config.get_versions()
-        self.sc2_proc = self.run_config.start(version=versions['4.9.3'])
+        self.sc2_proc = self.run_config.start()#version=versions['4.9.3'])
 
         self.controller = self.sc2_proc.controller
         ping = self.controller.ping()
@@ -115,7 +117,7 @@ class Parser: #612
             self.player_id = 2
         else:
             print("Replay: Incorrect race match-up")
-            return False
+            #return False
         if (info.player_info[self.player_id-1].player_mmr < 1000):
             print("Low MMR player")
         if (sc_pb.Result.Name(info.player_info[0].player_result.result) != 'Victory'):
@@ -145,7 +147,7 @@ class Parser: #612
         dirname = os.path.dirname(fileName)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        self.controller.act()
+
         while True:
             #Takes one step through the replay
             self.controller.step(step_mul)
