@@ -13,7 +13,7 @@ import Bots
 
 from Bots.MoveToBeacon import MoveToBeacon, GenerateMoveToBeaconTestData
 from Bots.Overmind.Overmindx00 import Overmindx00
-from DeepNetwork import build_knet, build_transformer, build_LSTM
+from DeepNetwork import build_knet, build_transformer, build_LSTM, train_LSTM
 from Bots.DefeatEnemies import RandomAgent, DefeatEnemies
 from pysc2Replay.ObserverAgent import NothingAgent
 from pysc2.agents import base_agent
@@ -26,18 +26,19 @@ from absl import app
 def main(unused_argv):
     #build_knet()
     #build_transformer()
-    build_LSTM()
+    #build_LSTM()
+    train_LSTM()
     #transform_replay
     #Agent
-    agent = NothingAgent()
+    agent = Overmindx00()
     try: 
         while True:
             with sc2_env.SC2Env(False,
-                map_name = 'AbyssalReef',
+                map_name = 'KingsCove',
                 players= [
                         sc2_env.Agent(sc2_env.Race.zerg),
-                        sc2_env.Bot(sc2_env.Race.zerg, sc2_env.Difficulty.very_easy)
-                         ], 
+                        sc2_env.Bot(sc2_env.Race.terran, sc2_env.Difficulty.very_easy)
+                         ],
                 agent_interface_format=features.AgentInterfaceFormat(
                     #What resolution the player sees the world at 
                     feature_dimensions=features.Dimensions(screen=const.ScreenSize(), minimap=const.MiniMapSize()),
@@ -46,7 +47,7 @@ def main(unused_argv):
                     #Increase camera size to encompass whole map
                     camera_width_world_units=round(const.WorldSize().x)),
                 #Steps default is 8 per frame (168APM) (16 = 1 second)
-                step_mul=1, # 175,
+                step_mul=16, # 175,
                 #Max steps per game (0 is infinite)
                 game_steps_per_episode=0,
                 #visualize pysc2 input layers 

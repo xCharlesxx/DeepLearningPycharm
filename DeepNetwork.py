@@ -5,10 +5,13 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 
+import pickle
+
 import keras as ks
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Reshape
 from keras.callbacks import TensorBoard
+import gc
 #from keras_transformer import get_model
 
 from pysc2.lib import features
@@ -72,32 +75,36 @@ def extract_data_dirs(dirs, num):
     outputs = []
     print('Extracting files...')
     for file in range(0, num):
-        #print('\r', end='')
+        print('\r', end='')
+        print(file, end ='')
         #print("{}/{}".format(counter+1, all_files_size), end='')
 
         inarr = np.load(dirs[file], allow_pickle=True)
-        outputs.append(translate_outputs_to_NN(inarr['action'][0]))
+        outputs.append(inarr['action'])
         inputs.append(inarr['feature_layers'])
-        n = np.array(inputs)
-        z = np.array(outputs)
+    inputs = np.array(inputs)
+    outputs = np.array(outputs)
 
         #print("{}/{}".format(counter, all_files_size))
     return [inputs, outputs]
 
 
 def translate_outputs_to_NN(output):
-    trans_outputs = np.zeros([12], float)
+    trans_outputs = np.zeros([13], float)
     position = 0;
     for cell in output:
         try:
             for xy in cell:
                 translated = position_translation(position, xy)
-                if (translated[1] > 1 or translated[1] < 0):
+                if (translated[1] > 1):
+                    translated[1] = 1
                     print("Something went wrong in translate_outputs")
-                else:
-                    trans_outputs[translated[0]] = translated[1]
-                    position += 1
-                    #print("{} -> {}".format(xy, translated))
+                if(translated[1] < 0):
+                    translated[1] = 0
+                    print("Something went wrong in translate_outputs")
+                trans_outputs[translated[0]] = translated[1]
+                position += 1
+                #print("{} -> {}".format(xy, translated))
         except TypeError:
             translated = position_translation(position, cell)
             if (translated[1] > 1 or translated[1] < 0):
@@ -107,37 +114,57 @@ def translate_outputs_to_NN(output):
                 position += 1
                 #print("{} -> {}".format(cell, translated))
     if (output[0] in ability_dict):
-        trans_outputs[11] = ability_dict[output[0]]
+        trans_outputs[12] = ability_dict[output[0]]
     return trans_outputs
 def position_translation(position, value):
     #Action
     if (position == 0):
         #Select point
-        if (value in [2, 451, 452]):
+        if (value in [2]):
             return [0, 1]
-        #Attack point
-        elif (value in [13, 17, 12, 14, 16]):
-            return [1, 1]
         #Select rect
         elif (value in [3]):
+            return [1, 1]
+        #Smart screen
+        elif (value in [451, 452]):
             return [2, 1]
+        #Attack screen
+        elif (value in [13, 17, 12, 14, 16]):
+            return [3, 1]
         #Hold pos
         elif (value in [274,453]):
-            return [3, 1]
+            return [4, 1]
         #Select army
         elif (value in [7]):
-            return [4, 1]
+            return [5, 1]
         #Use ability
         else:
-            return [5, 1]
+            return [6, 1]
     #Stack action
     if (position == 1):
         return [7, value[0] / 4]
     #Coordinates
     if (position >= 2):
-        return [position + 5, value / const.ScreenSize().x]
+        return [position + 6, value / const.ScreenSize().x]
     print("Something went wrong in position_translation")
     return 0
+
+def get_closest_ability(ability_val, available_abilities):
+    # Find available abilities to use
+    abilities = list(set(available_abilities).intersection(ability_dict.keys()))
+    ability_choice = 0
+    best_dist = 1.0
+    # Find ability with value closest to NN output value
+    for ability in abilities:
+        difference = abs(ability_dict[ability] - ability_val)
+        if difference < best_dist:
+            best_dist = difference
+            ability_choice = ability
+    if ability_choice in [45, 46, 47]:
+        ability_choice = 45
+    # Return ability chosen
+    return ability_choice
+
 ability_dict = {
     #inject
     204: 0,
@@ -333,52 +360,69 @@ def build_LSTM():
     activation = 'relu'
     model = Sequential()
 
-    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(1, 12, 352, 352),
-                    activation=activation))
+    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(352, 352, 12),
+                     data_format="channels_last", activation=activation))
     model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
     model.add(Dropout(0.3))
 
-    model.add(Conv2D(128, kernel_size=(3, 3), 
-                     activation=activation))
+    model.add(Conv2D(32, kernel_size=(3, 3), activation=activation))
     model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
     model.add(Dropout(0.3))
-    model.summary()
-    model.add(Conv2D(256, kernel_size=(3, 3), activation=activation))
+
+    model.add(Conv2D(32, kernel_size=(3, 3), activation=activation))
+    model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
+    model.add(Dropout(0.3))
+
+    model.add(Conv2D(16, kernel_size=(3, 3), activation=activation))
     model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
     model.add(Dropout(0.3))
     model.add(Flatten())
-    model.summary()
-    model.add(Dense(256, activation=activation))
-    model.add(Reshape((1, 256)))
+
+    model.add(Dense(16, activation=activation))
+    # model.add(Reshape((1, 256)))
     # Add some memory
-    model.add(LSTM(256))
-    model.add(Dense(11, activation=activation))
+    #model.add(LSTM(256))
+    model.add(Dense(13, activation=activation))
     model.compile(loss='mean_squared_error',
                   optimizer="adam",
                   metrics=["accuracy"])
 
-    TDDs = get_training_data_dirs("training_data")
-    batchSize = 500
-    #Whilst there's still data to train on
-    while (TDDs > 0):
+    model.save("models/Conv2D-80k")
+    return model
+
+def train_LSTM():
+    model = ks.models.load_model("models/Conv2D-80k")
+    TDDs = get_training_data_dirs("training_data/482")
+    TDDs += get_training_data_dirs("training_data/493")
+
+    batchSize = 3500
+    # Whilst there's still data to train on
+    while (len(TDDs) > 0):
         if len(TDDs) < batchSize:
             TD = extract_data_dirs(TDDs, len(TDDs))
             TDDs.clear()
             model.fit(TD[0], TD[1],
-                      batch_size=1,
+                      batch_size=50,
                       epochs=10,
                       validation_split=0.1,
-                      shuffle=False, verbose=1)
+                      shuffle=True, verbose=1)
+            TD.clear()
+            gc.collect()
+            # with open('/trainHistoryDict', 'wb') as file_pi:
+            #     pickle.dump(history.history, file_pi)
         else:
             TD = extract_data_dirs(TDDs, batchSize)
             TDDs = TDDs[batchSize:]
-
             model.fit(TD[0], TD[1],
-                    batch_size=1,
-                    epochs=10,
-                    validation_split=0.1,
-                    shuffle=False, verbose=1)
-    model.save("LSTM84")
+                      batch_size=50,
+                      epochs=10,
+                      validation_split=0.0,
+                      shuffle=True, verbose=1)
+            TD.clear()
+            gc.collect()
+            # with open('/trainHistoryDict', 'wb') as file_pi:
+            #     pickle.dump(history.history, file_pi)
+    model.save("models/Conv2D-Attempt2")
     return model
 
 #Tensorflow

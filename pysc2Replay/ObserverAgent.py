@@ -229,7 +229,7 @@ class NothingAgent(base_agent.BaseAgent):
     outputs = []
 
     def __init__(self):
-        TD = get_training_data_layers("training_data/")
+        #TD = get_training_data_layers("training_data/")
         self.inputs = TD[0]
         self.outputs = TD[1]
 

@@ -22,6 +22,7 @@ import random
 from decimal import Decimal
 from Constants import const
 from absl import app
+import os
 
 class MoveToBeacon(base_agent.BaseAgent):
     loaded = False
@@ -45,13 +46,13 @@ class MoveToBeacon(base_agent.BaseAgent):
                 if (obs.observation.single_select[0].unit_type == unit_type):
                     return True
         
-      #Tensorflow defs
-    def build():
-        variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
-        self.saver = tf.train.Saver(variables, max_to_keep=100)
-        self.init_op = tf.variables_initializer(variables)
-        train_summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope=scope)
-        self.train_summary_op = tf.summary.merge(train_summaries)
+    #   #Tensorflow defs
+    # def build():
+    #     variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
+    #     self.saver = tf.train.Saver(variables, max_to_keep=100)
+    #     self.init_op = tf.variables_initializer(variables)
+    #     train_summaries = tf.get_collection(tf.GraphKeys.SUMMARIES, scope=scope)
+    #     self.train_summary_op = tf.summary.merge(train_summaries)
 
     def save(self, path, step=None):
         os.makedirs(path, exist_ok=True)
