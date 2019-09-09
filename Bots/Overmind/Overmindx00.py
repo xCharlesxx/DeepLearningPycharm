@@ -28,36 +28,36 @@ class Overmindx00(base_agent.BaseAgent):
      self.model = ks.models.load_model("C:\\Users\\LeoCharlie\\PycharmProjects\\DeepLearning\\Models\\Conv2D-Attempt1")
     def select_point(self, type, x, y):
         act = [2]
-        act.append([type])
+        act.append([int(type)])
         act.append([x * const.ScreenSize().x, y * const.ScreenSize().x])
         return act
     def select_rect(self, x1, y1, x2, y2):
         act = [3]
-        act.append([0])
+        act.append([int(0)])
         act.append([x1 * const.ScreenSize().x, y1 * const.ScreenSize().x])
         act.append([x2 * const.ScreenSize().x, y2 * const.ScreenSize().x])
         return act
     def smart_screen(self, x, y):
         act = [451]
-        act.append([0])
+        act.append([int(0)])
         act.append([x * const.ScreenSize().x, y * const.ScreenSize().x])
         return act
     def attack_point(self, x, y):
         act = [12]
-        act.append([0])
+        act.append([int(0)])
         act.append([x * const.ScreenSize().x, y * const.ScreenSize().x])
         return act
     def hold_pos(self):
         act = [453]
-        act.append([0])
+        act.append([int(0)])
         return act
     def select_army(self):
         act = [7]
-        act.append([0])
+        act.append([int(0)])
         return act
     def use_ability(self, x, y, type, available):
         act = [get_closest_ability(type, available)]
-        act.append([0])
+        act.append([int(0)])
         act.append([x * const.ScreenSize().x, y * const.ScreenSize().x])
         return act
     #Each step
@@ -66,7 +66,7 @@ class Overmindx00(base_agent.BaseAgent):
 
         if (not self.loaded):
             self.loaded = True
-            self.model = ks.models.load_model("C:\\Users\\LeoCharlie\\PycharmProjects\\DeepLearning\\Models\\Conv2D-Attempt1")
+            self.model = ks.models.load_model("C:\\Users\\LeoCharlie\\PycharmProjects\\DeepLearning\\Models\\Conv2D-80k")
             return actions.FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
 
         T = Translator()
@@ -90,9 +90,15 @@ class Overmindx00(base_agent.BaseAgent):
          6: self.use_ability(prediction[8], prediction[9], prediction[12], obs.observation.available_actions)
         }
         action = choices.get(choice[0])
+        #action = int(action)
         print(action)
         if (action[0] in obs.observation.available_actions):
-            print(action)
+            print(action[0])
+            #args = action[1:]
+            # args[1] = [round(x) for x in args[1]]
+            # args[1] = [int(x) for x in args[1]]
+            #args[0][0] = int(args[0][0])
+            #print(args)
             return actions.FunctionCall(action[0], action[1:])
         else:
             print("No-op")

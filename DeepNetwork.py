@@ -71,8 +71,9 @@ def get_training_data_dirs(training_data_dir):
 
 
 def extract_data_dirs(dirs, num):
-    inputs = []
-    outputs = []
+    # inputs = []
+    # outputs = []
+    inouts = [[], []]
     print('Extracting files...')
     for file in range(0, num):
         print('\r', end='')
@@ -80,13 +81,17 @@ def extract_data_dirs(dirs, num):
         #print("{}/{}".format(counter+1, all_files_size), end='')
 
         inarr = np.load(dirs[file], allow_pickle=True)
-        outputs.append(inarr['action'])
-        inputs.append(inarr['feature_layers'])
-    inputs = np.array(inputs)
-    outputs = np.array(outputs)
-
+        # outputs.append(inarr['action'])
+        # inputs.append(inarr['feature_layers'])
+        inouts[1].append(inarr['action'])
+        inouts[0].append(inarr['feature_layers'])
+    # inputs = np.array(inputs)
+    # outputs = np.array(outputs)
+    inouts[0] = np.array(inouts[0])
+    inouts[1] = np.array(inouts[1])
+    #print("Wait")
         #print("{}/{}".format(counter, all_files_size))
-    return [inputs, outputs]
+    return inouts#[inputs, outputs]
 
 
 def translate_outputs_to_NN(output):
@@ -395,9 +400,10 @@ def train_LSTM():
     TDDs = get_training_data_dirs("training_data/482")
     TDDs += get_training_data_dirs("training_data/493")
 
-    batchSize = 3500
+    batchSize = 4000
     # Whilst there's still data to train on
     while (len(TDDs) > 0):
+        print("{} files left".format(len(TDDs)))
         if len(TDDs) < batchSize:
             TD = extract_data_dirs(TDDs, len(TDDs))
             TDDs.clear()
@@ -422,7 +428,7 @@ def train_LSTM():
             gc.collect()
             # with open('/trainHistoryDict', 'wb') as file_pi:
             #     pickle.dump(history.history, file_pi)
-    model.save("models/Conv2D-Attempt2")
+    model.save("models/Conv2D-80k-x2")
     return model
 
 #Tensorflow
