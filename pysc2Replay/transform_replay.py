@@ -22,10 +22,10 @@ from pynput.keyboard import Key, Controller
 
 from fnmatch import fnmatch
 cpus = multiprocessing.cpu_count()
-
+#LearningReplays\\482KC\\
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
-flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\493KC\\", "Path to the replay files.")
+flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\482KC\\", "Path to the replay files.")
 flags.DEFINE_string("agent", "ObserverAgent.ObserverAgent", "Path to an agent.")
 flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
@@ -51,7 +51,7 @@ class Parser: #612
 
         self.run_config = run_configs.get()
         versions = self.run_config.get_versions()
-        self.sc2_proc = self.run_config.start(version=versions['4.9.3'])
+        self.sc2_proc = self.run_config.start(version=versions['4.8.2'])
 
         self.controller = self.sc2_proc.controller
         ping = self.controller.ping()
@@ -134,6 +134,7 @@ class Parser: #612
     def start(self):
         print("Hello we are in Start")
         step_mul = 1
+        trainingDataPath = 'G:/training_data/'
         _features = features.features_from_game_info(self.controller.game_info(), use_camera_position=True)
         #print("world_tl_to_world_camera_rel: {}\n\nworld_to_feature_screen_px: {}\n\nworld_to_world_tl: {}".format(_features._world_tl_to_world_camera_rel,
         #                                                                              _features._world_to_feature_screen_px,
@@ -142,17 +143,17 @@ class Parser: #612
         #                       point.Point(*const.WorldSize()),
         #                       self.camera_width)
         packageCounter = 0
-        fileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.csv'
-        npFileName = '../training_data/' + self.replay_file_name + "/" + str(packageCounter) + '.npy'
-        npFileNameComp = '../training_data/' + self.replay_file_name + "/" + str(packageCounter)
+        fileName = trainingDataPath + self.replay_file_name + "/" + str(packageCounter) + '.csv'
+        npFileName = trainingDataPath + self.replay_file_name + "/" + str(packageCounter) + '.npy'
+        npFileNameComp = trainingDataPath + self.replay_file_name + "/" + str(packageCounter)
         dirname = os.path.dirname(fileName)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        keyboard = Controller()
-        time.sleep(1)
-        keyboard.press(str(self.player_id))
-        time.sleep(0.5)
-        keyboard.release(str(self.player_id))
+        # keyboard = Controller()
+        # time.sleep(1)
+        # keyboard.press(str(self.player_id))
+        # time.sleep(0.5)
+        # keyboard.release(str(self.player_id))
         while True:
 
             #Takes one step through the replay
@@ -186,7 +187,7 @@ class Parser: #612
                             #self.agent.states.append(self.agent.step(step, self.info, _features.reverse_action(action)))
                             state = self.agent.step(step, self.info, _features.reverse_action(action))
                             if state != 0:
-                                npFileNameComp = '../training_data/' + self.replay_file_name + "/" + str(packageCounter)
+                                npFileNameComp = trainingDataPath + self.replay_file_name + "/" + str(packageCounter)
                                 np.savez_compressed(npFileNameComp, action=translate_outputs_to_NN(state["action"][0]),
                                                                     feature_layers=np.moveaxis((np.array(state["feature_layers"])), 0, 2))
                                 packageCounter += 1
@@ -248,9 +249,9 @@ def parse_replay(replay_batch, agent_module, agent_cls):
 def main(unused):
     agent_module, agent_name = FLAGS.agent.rsplit(".", 1)
     agent_cls = getattr(importlib.import_module(agent_module), agent_name)
-    processes = 1#16 #int(FLAGS.procs / 2)
+    processes = 8 #int(FLAGS.procs / 2)
     replay_folder = FLAGS.replays
-    batch_size = 44#FLAGS.batch
+    batch_size = 2#FLAGS.batch
 
     truePath = os.path.join(replay_folder, '*.SC2Replay')
     replays = glob.glob(truePath, recursive=True)

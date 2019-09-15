@@ -5,10 +5,13 @@ import numpy as np
 import math
 
 from pysc2.lib import actions as sc_action
+from pysc2.lib import units
 from pysc2.lib import static_data
 from pysc2.agents import base_agent
 from Constants import const
 from Translator import Translator
+from TranslateOutputs import translate
+from DeepNetwork import get_training_data_dirs, extract_data_dirs
 
 import datetime
 class ObserverAgent(base_agent.BaseAgent):
@@ -103,18 +106,18 @@ class ObserverAgent(base_agent.BaseAgent):
         return newInput
 
     def select_point(self, args):
-        return list(([(int(args[0][0]))], [(args[1][0]/2) + (self.cam_pos_offset[0]*2), (args[1][1]/2) + (self.cam_pos_offset[1]*2)]))
+        return list(([(int(args[0][0]))], [((args[1][0]/2) + self.cam_pos_offset[0])*2, ((args[1][1]/2) + self.cam_pos_offset[1])*2]))
 
     def single_select_point(self, args):
-        return list(([0], [(args[1][0]/2) + (self.cam_pos_offset[0]*2), (args[1][1]/2) + (self.cam_pos_offset[1]*2)]))
+        return list(([0], [((args[1][0]/2) + self.cam_pos_offset[0])*2, ((args[1][1]/2) + self.cam_pos_offset[1])*2]))
 
     def double_select_point(self, args):
         if (args[1] == args[2]):
             return "Unknown"
             #return self.single_select_point(args[:-1])
         list = [[0]]
-        list.append([(args[1][0]/2) + (self.cam_pos_offset[0]*2), (args[1][1]/2) + (self.cam_pos_offset[1]*2)])
-        list.append([(args[2][0]/2) + (self.cam_pos_offset[0]*2), (args[2][1]/2) + (self.cam_pos_offset[1]*2)])
+        list.append([(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]])
+        list.append([(args[2][0]/2) + self.cam_pos_offset[0], (args[2][1]/2) + self.cam_pos_offset[1]])
         return list
     def single_q(self, args):
         return [[0]]
@@ -145,15 +148,19 @@ class ObserverAgent(base_agent.BaseAgent):
 
 
     def step(self, time_step, info, act):
-
-        self.cam_pos_offset = [time_step.observation.camera_position[0] - (const.WorldSize().x/2), time_step.observation.camera_position[1] - (const.WorldSize().y/2)]
         #print(time_step.observation.camera_position)
-        #print(self.cam_pos_offset)
-        #print(act.arguments)
-        #print(time_step.observation.camera_position - self.cam_pos_offset)
-        #print (act)
+        # Screen is double world units so center point would be worldSize
+        self.cam_pos_offset = [(time_step.observation.camera_position[0] - const.WorldSize().x),
+                               (time_step.observation.camera_position[1] - const.WorldSize().y)]
+        # print(time_step.observation.camera_position)
+        # print(self.cam_pos_offset)
+        # print(act.arguments)
+        # print(time_step.observation.camera_position - self.cam_pos_offset)
+        # print (act)
+        # print (self.cam_pos_offset)
+        # print("\n")
         state = {"action": [self.extract_args(int(act.function), act.arguments)]}
-        print(act.function)
+        #print(act.function)
         print(state["action"])
         if ("Unknown" in state["action"][0]):
             return 0
@@ -176,7 +183,7 @@ class ObserverAgent(base_agent.BaseAgent):
             #print(output)
             height += 1
         #print("\n")
-        print("W: {} H: {}".format(width, height))
+        #print("W: {} H: {}".format(width, height))
         # print("width: ")
         # print(width)
         # print("height: ")
@@ -227,13 +234,25 @@ class ObserverAgent(base_agent.BaseAgent):
 class NothingAgent(base_agent.BaseAgent):
     inputs = []
     outputs = []
+    first = True
+    episodes = 0
 
-    def __init__(self):
-        #TD = get_training_data_layers("training_data/")
-        self.inputs = TD[0]
-        self.outputs = TD[1]
+    #def __init__(self):
+        # TDDs = get_training_data_dirs("training_data/FinalTest")
+        # TD = extract_data_dirs(TDDs, len(TDDs))
+        # self.inputs = TD[0].tolist()
+        # self.outputs = TD[1].tolist()
+    def get_units_by_type(self, obs, unit_type):
+        return [unit for unit in obs.observation.feature_units
+                if unit.unit_type == unit_type]
 
     def step(self, obs):
+        # overlord = self.get_units_by_type(obs, units.Zerg.Overlord)
+        # if (len(overlord) > 0):
+        #     print("Overlord at: {},{}".format(overlord[0].x, overlord[0].y))
+
+        print(self.cam_pos_offset)
+        # unit_y, unit_x = (obs.observation['feature_screen'][6] == units.Zerg.Overlord).nonzero()
         height = 0
         for x in obs.observation.feature_screen[6]:
             output = ""
@@ -246,16 +265,22 @@ class NothingAgent(base_agent.BaseAgent):
             height += 1
         #print("\n")
         print("W: {} H: {}".format(len(obs.observation.feature_screen[0][0]), len(obs.observation.feature_screen[0])))
-        #     if (self.first):
-        #         if (1 in obs.observation.available_actions):
-        #             self.first = False
-        #             #self.inputs.pop(0)
-        #             return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x/2,const.MiniMapSize().y/2])
-        #     elif (self.inputs[0][0] in obs.observation.available_actions):
-        #         action = self.inputs.pop(0)
-        #         #if action[0] != 452:
-        #         print("Made action: {}".format(action))
-        #         return sc_action.FunctionCall(action[0], action[1:])
-        #     self.inputs.pop(0)
-        #    return sc_action.FUNCTIONS.no_op()
-        return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
+        #if (self.first):
+        if (1 in obs.observation.available_actions):
+            self.first = False
+            for item in range(0, len(self.outputs)):
+                self.outputs[item] = translate(obs, self.outputs[item])
+            #self.inputs.pop(0)
+            return sc_action.FUNCTIONS.move_camera([obs.observation.camera_position[0] - self.cam_pos_offset[0],
+                                                    obs.observation.camera_position[1] - self.cam_pos_offset[1]])
+            return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x/2, const.MiniMapSize().y/2])
+        # elif (self.outputs[0][0] in obs.observation.available_actions):
+        #     action = self.outputs.pop(0)
+        #     #if action[0] != 452:
+        #     print("Made action: {}".format(action))
+        #     return sc_action.FunctionCall(action[0], action[1:])
+        # self.inputs.pop(0)
+        if (2 in obs.observation.available_actions):
+            return sc_action.FunctionCall(2, [[0], [283, 296]])
+        return sc_action.FUNCTIONS.no_op()
+        #return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])

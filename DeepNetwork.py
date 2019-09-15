@@ -397,9 +397,9 @@ def build_LSTM():
 
 def train_LSTM():
     model = ks.models.load_model("models/Conv2D-80k")
-    TDDs = get_training_data_dirs("training_data/482")
-    TDDs += get_training_data_dirs("training_data/493")
-
+    #TDDs = get_training_data_dirs("training_data/482")
+    #TDDs += get_training_data_dirs("training_data/493")
+    TDDs = get_training_data_dirs("training_data/first")
     batchSize = 4000
     # Whilst there's still data to train on
     while (len(TDDs) > 0):
@@ -409,7 +409,7 @@ def train_LSTM():
             TDDs.clear()
             model.fit(TD[0], TD[1],
                       batch_size=50,
-                      epochs=10,
+                      epochs=20,
                       validation_split=0.1,
                       shuffle=True, verbose=1)
             TD.clear()
@@ -421,7 +421,7 @@ def train_LSTM():
             TDDs = TDDs[batchSize:]
             model.fit(TD[0], TD[1],
                       batch_size=50,
-                      epochs=10,
+                      epochs=20,
                       validation_split=0.0,
                       shuffle=True, verbose=1)
             TD.clear()

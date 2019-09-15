@@ -27,10 +27,10 @@ def main(unused_argv):
     #build_knet()
     #build_transformer()
     #build_LSTM()
-    train_LSTM()
+    #train_LSTM()
     #transform_replay
     #Agent
-    agent = Overmindx00()
+    agent = NothingAgent()
     try: 
         while True:
             with sc2_env.SC2Env(False,
@@ -44,8 +44,9 @@ def main(unused_argv):
                     feature_dimensions=features.Dimensions(screen=const.ScreenSize(), minimap=const.MiniMapSize()),
                     #More indepth unit information
                     use_feature_units=True,
+                    use_camera_position=True,
                     #Increase camera size to encompass whole map
-                    camera_width_world_units=round(const.WorldSize().x)),
+                    camera_width_world_units=round(const.WorldSize().x * 2)),
                 #Steps default is 8 per frame (168APM) (16 = 1 second)
                 step_mul=16, # 175,
                 #Max steps per game (0 is infinite)
