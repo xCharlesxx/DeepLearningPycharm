@@ -27,7 +27,7 @@ class Overmindx00(base_agent.BaseAgent):
     #One-time setup
     def __init__(self):
      super(Overmindx00, self).__init__()
-     self.model = ks.models.load_model("C:\\Users\\LeoCharlie\\PycharmProjects\\DeepLearning\\Models\\Conv2D-Attempt1")
+     self.model = ks.models.load_model("G:\\Models\\Conv2D-80k")
 
     #Each step
     def step(self, obs):
@@ -35,7 +35,7 @@ class Overmindx00(base_agent.BaseAgent):
 
         if (not self.loaded):
             self.loaded = True
-            self.model = ks.models.load_model("C:\\Users\\LeoCharlie\\PycharmProjects\\DeepLearning\\Models\\Conv2D-80k-x2")
+            self.model = ks.models.load_model("G:\\Models\\Conv2D-80k")
             return actions.FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
 
         T = Translator()
@@ -46,20 +46,10 @@ class Overmindx00(base_agent.BaseAgent):
 
         featureLayers = (np.moveaxis((np.array(tFeatureLayers)), 0, 2)).reshape(-1, const.ScreenSize().x, const.ScreenSize().y, 12)
         prediction = self.model.predict(featureLayers)[0]
-        action = int(translate(prediction))
+        action = int(translate(obs, prediction))
         print(action)
         if (action[0] in obs.observation.available_actions):
             print(action[0])
-            try:
-                if (len(action[2]) > 1):
-                    action[2][1] += 4
-            except:
-                pass
-            #args = action[1:]
-            # args[1] = [round(x) for x in args[1]]
-            # args[1] = [int(x) for x in args[1]]
-            #args[0][0] = int(args[0][0])
-            #print(args)
             return actions.FunctionCall(action[0], action[1:])
         else:
             print("No-op")

@@ -25,7 +25,7 @@ cpus = multiprocessing.cpu_count()
 #LearningReplays\\482KC\\
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
-flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\482KC\\", "Path to the replay files.")
+flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\493KC\\", "Path to the replay files.")
 flags.DEFINE_string("agent", "ObserverAgent.ObserverAgent", "Path to an agent.")
 flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
@@ -51,7 +51,7 @@ class Parser: #612
 
         self.run_config = run_configs.get()
         versions = self.run_config.get_versions()
-        self.sc2_proc = self.run_config.start(version=versions['4.8.2'])
+        self.sc2_proc = self.run_config.start(version=versions['4.9.3'])
 
         self.controller = self.sc2_proc.controller
         ping = self.controller.ping()
@@ -149,11 +149,11 @@ class Parser: #612
         dirname = os.path.dirname(fileName)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        # keyboard = Controller()
-        # time.sleep(1)
-        # keyboard.press(str(self.player_id))
-        # time.sleep(0.5)
-        # keyboard.release(str(self.player_id))
+        keyboard = Controller()
+        time.sleep(1)
+        keyboard.press(str(self.player_id))
+        time.sleep(0.5)
+        keyboard.release(str(self.player_id))
         while True:
 
             #Takes one step through the replay
@@ -249,9 +249,9 @@ def parse_replay(replay_batch, agent_module, agent_cls):
 def main(unused):
     agent_module, agent_name = FLAGS.agent.rsplit(".", 1)
     agent_cls = getattr(importlib.import_module(agent_module), agent_name)
-    processes = 8 #int(FLAGS.procs / 2)
+    processes = 1 #int(FLAGS.procs / 2)
     replay_folder = FLAGS.replays
-    batch_size = 2#FLAGS.batch
+    batch_size = 44#FLAGS.batch
 
     truePath = os.path.join(replay_folder, '*.SC2Replay')
     replays = glob.glob(truePath, recursive=True)

@@ -33,9 +33,9 @@ def get_training_data(training_data_dir):
     counter = 0
     print('Extracting files...')
     for file in all_files:
-        print("{}/{}".format(counter+1,all_files_size), end='\r')
+        print("{}/{}".format(counter+1, all_files_size), end='\r')
         counter+=1
-        full_path = os.path.join(training_data_dir,file)
+        full_path = os.path.join(training_data_dir, file)
         # Extract file code
         with open (full_path) as csv_file:
             reader = csv.reader(csv_file)
@@ -392,14 +392,14 @@ def build_LSTM():
                   optimizer="adam",
                   metrics=["accuracy"])
 
-    model.save("models/Conv2D-80k")
+    model.save("G:\Models\Conv2D-80k")
     return model
 
 def train_LSTM():
-    model = ks.models.load_model("models/Conv2D-80k")
+    model = ks.models.load_model("G:\Models\Conv2D-80k")
     #TDDs = get_training_data_dirs("training_data/482")
     #TDDs += get_training_data_dirs("training_data/493")
-    TDDs = get_training_data_dirs("training_data/first")
+    TDDs = get_training_data_dirs("G:\\training_data\\All")
     batchSize = 4000
     # Whilst there's still data to train on
     while (len(TDDs) > 0):
@@ -409,7 +409,7 @@ def train_LSTM():
             TDDs.clear()
             model.fit(TD[0], TD[1],
                       batch_size=50,
-                      epochs=20,
+                      epochs=10,
                       validation_split=0.1,
                       shuffle=True, verbose=1)
             TD.clear()
@@ -421,14 +421,14 @@ def train_LSTM():
             TDDs = TDDs[batchSize:]
             model.fit(TD[0], TD[1],
                       batch_size=50,
-                      epochs=20,
+                      epochs=10,
                       validation_split=0.0,
                       shuffle=True, verbose=1)
             TD.clear()
             gc.collect()
             # with open('/trainHistoryDict', 'wb') as file_pi:
             #     pickle.dump(history.history, file_pi)
-    model.save("models/Conv2D-80k-x2")
+    model.save("G:\Models\Conv2D-80k")
     return model
 
 #Tensorflow
