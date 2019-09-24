@@ -12,7 +12,7 @@ import numpy
 import Bots
 
 from Bots.MoveToBeacon import MoveToBeacon, GenerateMoveToBeaconTestData
-from Bots.Overmind.Overmindx00 import Overmindx00
+from Bots.Overmind.Overmind import Overmind
 from DeepNetwork import build_knet, build_transformer, build_LSTM, train_LSTM
 from Bots.DefeatEnemies import RandomAgent, DefeatEnemies
 from pysc2Replay.ObserverAgent import NothingAgent
@@ -31,7 +31,7 @@ def main(unused_argv):
     #     train_LSTM()
     #transform_replay
     #Agent
-    agent = Overmindx00()
+    agent = Overmind()
     try: 
         while True:
             with sc2_env.SC2Env(False,
