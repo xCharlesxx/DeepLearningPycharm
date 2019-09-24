@@ -44,7 +44,7 @@ def main(unused_argv):
                     #What resolution the player sees the world at 
                     feature_dimensions=features.Dimensions(screen=const.ScreenSize(), minimap=const.MiniMapSize()),
                     #More indepth unit information
-                    use_feature_units=True,
+                    use_raw_units=True,
                     use_camera_position=True,
                     #Increase camera size to encompass whole map
                     camera_width_world_units=round(const.WorldSize().x)),
