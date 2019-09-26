@@ -20,13 +20,13 @@ from Constants import const
 from DeepNetwork import get_closest_ability
 import numpy as np
 import keras as ks
-
+import math
 from absl import app
 
 class Overmind(base_agent.BaseAgent):
     loaded = False
-    buildings = []
     zergSpeed = False
+    homeHatch = None
     #One-time setup
     def __init__(self):
         super(Overmind, self).__init__()
@@ -54,13 +54,17 @@ class Overmind(base_agent.BaseAgent):
     def can_do(self, obs, action):
         return action in obs.observation.available_actions
 
-    def get_buildings(self, building):
+    def get_buildings(self, obs, building):
         if (building == units.Zerg.Hatchery):
-            hatcheries = units.Zerg.Lair in self.buildings
-            hatcheries += units.Zerg.Hive in self.buildings
-            hatcheries += units.Zerg.Hatchery in self.buildings
+            hatcheries = [unit for unit in obs.observation.raw_units
+                          if unit.unit_type == units.Zerg.Lair]
+            hatcheries += [unit for unit in obs.observation.raw_units
+                          if unit.unit_type == units.Zerg.Hive]
+            hatcheries += [unit for unit in obs.observation.raw_units
+                          if unit.unit_type == units.Zerg.Hatchery]
             return hatcheries
-        return building in self.buildings
+        return [unit for unit in obs.observation.raw_units
+                          if unit.unit_type == building]
 
     def build_unit(self, obs, unit_type):
         # Queen
@@ -71,9 +75,9 @@ class Overmind(base_agent.BaseAgent):
                 if (self.can_do(obs, FUNCTIONS.Train_Queen_quick.id)):
                     return FUNCTIONS.Train_Queen_quick('now')
             else:
-                bases = self.get_buildings(units.Zerg.Hatchery)
-                return FUNCTIONS.select_point('select_all_type', (bases[-1].x,
-                                                                          bases[-1].y))
+                bases = self.get_buildings(obs, units.Zerg.Hatchery)
+                return FUNCTIONS.select_point('select_all_type', (bases[-1].x*2,
+                                                                          bases[-1].y*2))
         if (not self.unit_type_is_selected(obs, units.Zerg.Larva)):
             larva = self.get_units_by_type(obs, units.Zerg.Larva)
             if len(larva) > 0:
@@ -99,10 +103,54 @@ class Overmind(base_agent.BaseAgent):
                 return FUNCTIONS.Train_Roach_quick('now')
         return FUNCTIONS.no_op()
 
-    def build_building(self, building_type):
+    def build_building(self, obs, building_type):
+        if (not self.unit_type_is_selected(obs, units.Zerg.Drone)):
+            drones = self.get_units_by_type(obs, units.Zerg.Drone)
+            return FUNCTIONS.select_point('select_all_type', (drones[-1].x*2,
+                                                              drones[-1].y*2))
+        hatcheries = self.get_units_by_type(obs, units.Zerg.Hatchery)
+        if (building_type == units.Zerg.Hatchery):
+            if (self.can_do(obs, FUNCTIONS.Build_Hatchery_screen.id)):
+                if hatcheries[0].y*2 < 200:
+                    if len(hatcheries) == 1:
+                        return FUNCTIONS.Build_Hatchery_screen("now", [58, 138])
+                    else:
+                        return FUNCTIONS.Build_Hatchery_screen("now", [122, 78])
+                else:
+                    if len(hatcheries) == 1:
+                        return FUNCTIONS.Build_Hatchery_screen("now", [292, 244])
+                    else:
+                        return FUNCTIONS.Build_Hatchery_screen("now", [228, 304])
+
+        if (building_type == units.Zerg.Extractor):
+            if (self.can_do(obs, FUNCTIONS.Build_Extractor_screen.id)):
+                closestExtractor = None
+                closestDist = 10000
+                for unit in obs.observation.raw_units:
+                    if unit.unit_type == units.Neutral.VespeneGeyser:
+                        dist = math.sqrt((unit.x - hatcheries[0].x) ** 2 + (unit.y - hatcheries[0].y) ** 2)
+                        if dist < closestDist:
+                            closestExtractor = unit
+                            closestDist = dist
+                return FUNCTIONS.Build_Extractor_screen("now", [closestExtractor.x*2, closestExtractor.y*2])
+
+        if (building_type == units.Zerg.SpawningPool):
+            if (self.can_do(obs, FUNCTIONS.Build_SpawningPool_screen.id)):
+                if hatcheries[0].y*2 > 200:
+                    offset = -10
+                else:
+                    offset = 10
+                return FUNCTIONS.Build_SpawningPool_screen("now", [self.homeHatch.x*2, (self.homeHatch.y*2) + offset])
+
         return FUNCTIONS.no_op()
 
-    def upgrade(self, upgrade):
+    def upgrade(self, obs, upgrade):
+        if not self.unit_type_is_selected(units.Zerg.SpawningPool):
+            spawningPool = self.get_buildings(obs, units.Zerg.SpawningPool)
+            return FUNCTIONS.select_point('select_all_type', (spawningPool[-1].x*2,
+                                                              spawningPool[-1].y*2))
+        else:
+            return FUNCTIONS.Research_ZerglingMetabolicBoost_quick("now")
         return FUNCTIONS.no_op()
 
     def macro(self, obs):
@@ -110,32 +158,32 @@ class Overmind(base_agent.BaseAgent):
         if (obs.observation.player['food_cap'] - obs.observation.player['food_used'] < 2):
             return self.build_unit(obs, units.Zerg.Overlord)
         if dronenum == 17:
-            if len(self.get_buildings(units.Zerg.Hatchery)) == 1:
-                return self.build_building(units.Zerg.Hatchery)
-            if len(self.get_buildings(units.Zerg.Extractor)) == 0:
-                return self.build_building(units.Zerg.Extractor)
-            if len(self.get_buildings(units.Zerg.SpawningPool)):
-                return self.build_building(units.Zerg.SpawningPool)
+            if len(self.get_buildings(obs, units.Zerg.Hatchery)) == 1:
+                return self.build_building(obs, units.Zerg.Hatchery)
+            if len(self.get_buildings(obs, units.Zerg.Extractor)) == 0:
+                return self.build_building(obs, units.Zerg.Extractor)
+            if len(self.get_buildings(obs, units.Zerg.SpawningPool)) == 0:
+                return self.build_building(obs, units.Zerg.SpawningPool)
         if dronenum == 19:
             print("Drones in gas")
         if dronenum == 20 and len(self.get_units_by_type(obs, units.Zerg.Queen)) < 2:
             return self.build_unit(obs, units.Zerg.Queen)
         if dronenum == 27:
-            if not self.zergSpeed:
-                return self.upgrade(1)
+            # if not self.zergSpeed:
+            #     return self.upgrade(1)
             if len(self.get_units_by_type(obs, units.Zerg.Zergling)) < 4:
                 return self.build_unit(obs, units.Zerg.Zergling)
-        if dronenum == 28 and len(self.get_buildings(units.Zerg.Hatchery)):
-            return self.build_building(units.Zerg.Hatchery)
+        if dronenum == 28 and len(self.get_buildings(obs, units.Zerg.Hatchery)):
+            return self.build_building(obs, units.Zerg.Hatchery)
         if dronenum == 40:
-            if len(self.get_buildings(units.Zerg.Extractor)) < 4:
-                return self.build_building(units.Zerg.Extractor)
-            if len(self.get_buildings(units.Zerg.SporeCrawler) < 3):
-                return self.build_building(units.Zerg.SporeCrawler)
-            if len(self.get_buildings(units.Zerg.RoachWarren) < 1):
-                return self.build_building(units.Zerg.RoachWarren)
-            if len(self.get_buildings(units.Zerg.EvolutionChamber) < 2):
-                return self.build_building(units.Zerg.EvolutionChamber)
+            if len(self.get_buildings(obs, units.Zerg.Extractor)) < 4:
+                return self.build_building(obs, units.Zerg.Extractor)
+            if len(self.get_buildings(obs, units.Zerg.SporeCrawler) < 3):
+                return self.build_building(obs, units.Zerg.SporeCrawler)
+            if len(self.get_buildings(obs, units.Zerg.RoachWarren) < 1):
+                return self.build_building(obs, units.Zerg.RoachWarren)
+            if len(self.get_buildings(obs, units.Zerg.EvolutionChamber) < 2):
+                return self.build_building(obs, units.Zerg.EvolutionChamber)
 
         if dronenum > 60:
             #ALL UPGRADES
@@ -150,8 +198,8 @@ class Overmind(base_agent.BaseAgent):
 
         if (not self.loaded):
             self.loaded = True
+            self.homeHatch = self.get_buildings(obs, units.Zerg.Hatchery)[0]
             #self.model = ks.models.load_model("C:\\PycharmProjects\\models\\Conv2D-Full")
-            self.buildings.append(self.get_units_by_type(obs, units.Zerg.Hatchery))
             return FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
 
 
