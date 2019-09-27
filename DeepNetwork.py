@@ -361,46 +361,41 @@ def build_knet():
 
 #multi-class classification problem
 def build_LSTM():
-    padding = 'same'
+    padding = 'valid'
     activation = 'relu'
+    data_format = 'channels_last'
     model = Sequential()
 
-    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(352, 352, 12),
-                     data_format="channels_last", activation=activation))
-    model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
+    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(352, 352, 12), activation=activation))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
     model.add(Dropout(0.3))
-
-    model.add(Conv2D(32, kernel_size=(3, 3), activation=activation))
-    model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
+    model.add(Conv2D(128, kernel_size=(3, 3), input_shape=(352, 352, 12), activation=activation))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
     model.add(Dropout(0.3))
-
-    model.add(Conv2D(32, kernel_size=(3, 3), activation=activation))
-    model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
-    model.add(Dropout(0.3))
-
-    model.add(Conv2D(16, kernel_size=(3, 3), activation=activation))
-    model.add(MaxPooling2D(pool_size=(2, 2), padding=padding))
+    model.add(Conv2D(256, kernel_size=(3, 3), activation=activation))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
     model.add(Dropout(0.3))
     model.add(Flatten())
-
-    model.add(Dense(16, activation=activation))
-    # model.add(Reshape((1, 256)))
+    model.add(Dense(256, activation=activation))
+    model.add(Reshape((1, 256)))
     # Add some memory
-    #model.add(LSTM(256))
+    model.add(LSTM(256))
     model.add(Dense(13, activation=activation))
+    model.summary()
+
     model.compile(loss='mean_squared_error',
                   optimizer="adam",
                   metrics=["accuracy"])
 
-    model.save("G:\Models\Conv2D-80k")
+    model.save("C:\Models\Conv2D-LSTM")
     return model
 
 def train_LSTM():
-    model = ks.models.load_model("G:\Models\Conv2D-80k")
+    model = ks.models.load_model("C:\Models\Conv2D-LSTM")
     #TDDs = get_training_data_dirs("training_data/482")
     #TDDs += get_training_data_dirs("training_data/493")
-    TDDs = get_training_data_dirs("G:\\training_data\\All")
-    batchSize = 4000
+    TDDs = get_training_data_dirs("F:\\training_data\\All")
+    batchSize = 100
     # Whilst there's still data to train on
     while (len(TDDs) > 0):
         print("{} files left".format(len(TDDs)))
@@ -409,7 +404,7 @@ def train_LSTM():
             TDDs.clear()
             model.fit(TD[0], TD[1],
                       batch_size=50,
-                      epochs=10,
+                      epochs=1,
                       validation_split=0.1,
                       shuffle=True, verbose=1)
             TD.clear()
@@ -421,14 +416,14 @@ def train_LSTM():
             TDDs = TDDs[batchSize:]
             model.fit(TD[0], TD[1],
                       batch_size=50,
-                      epochs=10,
+                      epochs=1,
                       validation_split=0.0,
                       shuffle=True, verbose=1)
             TD.clear()
             gc.collect()
             # with open('/trainHistoryDict', 'wb') as file_pi:
             #     pickle.dump(history.history, file_pi)
-    model.save("G:\Models\Conv2D-80k")
+    model.save("C:\Models\Conv2D-LSTM")
     return model
 
 #Tensorflow
