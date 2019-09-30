@@ -11,6 +11,7 @@ import keras as ks
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Reshape
 from keras.callbacks import TensorBoard
+from keras.layers.advanced_activations import LeakyReLU
 import gc
 #from keras_transformer import get_model
 
@@ -18,6 +19,7 @@ from pysc2.lib import features
 import numpy as np 
 import os 
 import csv
+import natsort
 import ast
 import re
 import random
@@ -64,7 +66,7 @@ def get_training_data_dirs(training_data_dir):
     all_folders = os.listdir(training_data_dir)
     all_files = []
     for folder in all_folders:
-        for file in os.listdir(os.path.join(training_data_dir, folder)):
+        for file in natsort.natsorted(os.listdir(os.path.join(training_data_dir, folder))):
             all_files.append(os.path.join(training_data_dir, folder, file))
     all_files_size = len([num for num in all_files])
     return all_files
@@ -366,36 +368,39 @@ def build_LSTM():
     data_format = 'channels_last'
     model = Sequential()
 
-    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(352, 352, 12), activation=activation))
+    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(352, 352, 12)))#, activation=activation))
+    model.add(LeakyReLU(alpha=0.3))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
     model.add(Dropout(0.3))
-    model.add(Conv2D(128, kernel_size=(3, 3), input_shape=(352, 352, 12), activation=activation))
+    model.add(Conv2D(128, kernel_size=(3, 3), input_shape=(352, 352, 12)))#, activation=activation))
+    model.add(LeakyReLU(alpha=0.3))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
     model.add(Dropout(0.3))
-    model.add(Conv2D(256, kernel_size=(3, 3), activation=activation))
+    model.add(Conv2D(256, kernel_size=(3, 3)))#, activation=activation))
+    model.add(LeakyReLU(alpha=0.3))
     model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
     model.add(Dropout(0.3))
     model.add(Flatten())
-    model.add(Dense(256, activation=activation))
+    model.add(Dense(256))#, activation=activation))
+    model.add(LeakyReLU(alpha=0.3))
     model.add(Reshape((1, 256)))
     # Add some memory
     model.add(LSTM(256))
-    model.add(Dense(13, activation=activation))
+    model.add(Dense(13))#, activation=activation))
+    model.add(LeakyReLU(alpha=0.3))
     model.summary()
 
     model.compile(loss='mean_squared_error',
                   optimizer="adam",
                   metrics=["accuracy"])
 
-    model.save("C:\Models\Conv2D-LSTM")
+    model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
     return model
 
 def train_LSTM():
-    model = ks.models.load_model("C:\Models\Conv2D-LSTM")
-    #TDDs = get_training_data_dirs("training_data/482")
-    #TDDs += get_training_data_dirs("training_data/493")
-    TDDs = get_training_data_dirs("F:\\training_data\\All")
-    batchSize = 100
+    model = ks.models.load_model("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
+    TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\All")
+    batchSize = 2000
     # Whilst there's still data to train on
     while (len(TDDs) > 0):
         print("{} files left".format(len(TDDs)))
@@ -403,10 +408,10 @@ def train_LSTM():
             TD = extract_data_dirs(TDDs, len(TDDs))
             TDDs.clear()
             model.fit(TD[0], TD[1],
-                      batch_size=50,
+                      batch_size=20,
                       epochs=1,
-                      validation_split=0.1,
-                      shuffle=True, verbose=1)
+                      validation_split=0.0,
+                      shuffle=False, verbose=1)
             TD.clear()
             gc.collect()
             # with open('/trainHistoryDict', 'wb') as file_pi:
@@ -415,16 +420,21 @@ def train_LSTM():
             TD = extract_data_dirs(TDDs, batchSize)
             TDDs = TDDs[batchSize:]
             model.fit(TD[0], TD[1],
-                      batch_size=50,
+                      batch_size=20,
                       epochs=1,
                       validation_split=0.0,
-                      shuffle=True, verbose=1)
+                      shuffle=False, verbose=1)
             TD.clear()
             gc.collect()
             # with open('/trainHistoryDict', 'wb') as file_pi:
             #     pickle.dump(history.history, file_pi)
-    model.save("C:\Models\Conv2D-LSTM")
-    return model
+    model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
+    del model
+    del TD
+    del TDDs
+    for i in range(20):
+        gc.collect()
+    return 0
 
 #Tensorflow
 def build_net(input, info, num_action):

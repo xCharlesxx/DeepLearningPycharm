@@ -20,15 +20,22 @@ from pysc2.agents import base_agent
 from pysc2.env import sc2_env, run_loop
 from pysc2.lib import actions, features, units
 from Constants import const
-
+from keras.backend.tensorflow_backend import set_session
+import gc
 from absl import app
 
 def main(unused_argv):
     #build_knet()
     #build_transformer()
-    #build_LSTM()
-    # for i in range(0, 100):
-    #     train_LSTM()
+    # build_LSTM()
+    # Dynamically grow the memory used on GPU
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
+    set_session(sess)
+    for i in range(0, 100):
+        train_LSTM()
+
     #transform_replay
     #Agent
     agent = Overmind()
