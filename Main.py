@@ -26,7 +26,7 @@ from absl import app
 def main(unused_argv):
     #build_knet()
     #build_transformer()
-    #build_LSTM()
+    # build_LSTM()
     # for i in range(0, 100):
     #     train_LSTM()
     #transform_replay
@@ -49,7 +49,7 @@ def main(unused_argv):
                     #Increase camera size to encompass whole map
                     camera_width_world_units=round(const.WorldSize().x)),
                 #Steps default is 8 per frame (168APM) (16 = 1 second)
-                step_mul=16, # 175,
+                step_mul=8, # 175,
                 #Max steps per game (0 is infinite)
                 game_steps_per_episode=0,
                 #visualize pysc2 input layers 

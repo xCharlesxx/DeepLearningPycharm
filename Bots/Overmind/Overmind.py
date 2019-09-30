@@ -85,17 +85,14 @@ class Overmind(base_agent.BaseAgent):
                     self.unit_type_is_selected(obs, units.Zerg.Lair)):
                 if (self.can_do(obs, FUNCTIONS.Train_Queen_quick.id)):
                     return FUNCTIONS.Train_Queen_quick('now')
+
+        if (not self.unit_type_is_selected(obs, units.Zerg.Larva)):
+            if (self.can_do(obs, FUNCTIONS.select_larva.id)):
+                return FUNCTIONS.select_larva('now')
             else:
                 bases = self.get_buildings(obs, units.Zerg.Hatchery, False)
-                return FUNCTIONS.select_point('select_all_type', (bases[-1].x*2,
-                                                                          bases[-1].y*2))
-        if (not self.unit_type_is_selected(obs, units.Zerg.Larva)):
-            larva = self.get_units_by_type(obs, units.Zerg.Larva)
-            if len(larva) > 0:
-                x = larva[-1].x
-                y = larva[-1].y
-                return FUNCTIONS.select_point('select_all_type', (larva[-1].x*2,
-                                                                      larva[-1].y*2))
+                return FUNCTIONS.select_point('select_all_type', (bases[-1].x * 2,
+                                                                  bases[-1].y * 2))
         # Drone
         if (unit_type == units.Zerg.Drone):
             if (self.can_do(obs, FUNCTIONS.Train_Drone_quick.id)):
@@ -164,27 +161,35 @@ class Overmind(base_agent.BaseAgent):
     def redestribute_workers(self, obs):
         hatcheries = self.get_buildings(obs, units.Zerg.Hatchery)
         extractors = self.get_buildings(obs, units.Zerg.Extractor)
-        if not self.unit_type_is_selected(obs, units.Zerg.Drone) and obs.observation.player.idle_worker_count > 0:
-            for worker in self.get_units_by_type(obs, units.Zerg.Drone):
-                if worker["order_length"] == 0:
-                    return FUNCTIONS.select_rect([0], (worker.x*2-2, worker.y*2-2), (worker.x*2+2, worker.y*2+2))
-
-        for hatch in hatcheries:
-            # If excess harvesters
-            if hatch.assigned_harvesters - hatch.ideal_harvesters > 0:
-                # if we haven't selected a drone or just told a drone to move -> select drone
-                if not self.unit_type_is_selected(obs, units.Zerg.Drone) or 451 in obs.observation.last_actions:
-                    drone = self.get_closest_unit_to_pos(obs, hatch.x, hatch.y, units.Zerg.Drone)
-                    return FUNCTIONS.select_point([0], (drone.x*2, drone.y*2))
-                else:
-                    for extractor in extractors:
-                        if extractor.assigned_harvesters - extractor.ideal_harvesters < 0:
-                            return FUNCTIONS.Smart_screen([0], (extractor.x * 2, extractor.y * 2))
-            # Not excess harvesters -> move drone to this place
-            else:
-                if self.unit_type_is_selected(obs, units.Zerg.Drone) and 451 not in obs.observation.last_actions:
-                    mineral = self.get_closest_unit_to_pos(obs, hatch.x, hatch.y, units.Neutral.MineralField)
-                    return FUNCTIONS.Smart_screen([0], (mineral.x*2, mineral.y*2))
+        #Check there's somewhere to put the drones
+        for buildings in hatcheries+extractors:
+            if buildings.assigned_harvesters - buildings.ideal_harvesters < 0:
+                # If there is space, shuffle workers
+                for hatch in hatcheries:
+                    # If excess harvesters
+                    if hatch.assigned_harvesters - hatch.ideal_harvesters > 0:
+                        # if we haven't selected a drone or just told a drone to move -> select drone
+                        if not self.unit_type_is_selected(obs, units.Zerg.Drone) or 451 in obs.observation.last_actions:
+                            # Get idle workers first
+                            if obs.observation.player.idle_worker_count > 0:
+                                for worker in self.get_units_by_type(obs, units.Zerg.Drone):
+                                    if worker["order_length"] == 0:
+                                        return FUNCTIONS.select_rect([0], (worker.x * 2 - 2, worker.y * 2 - 2),
+                                                                     (worker.x * 2 + 2, worker.y * 2 + 2))
+                            # Else just get excess from hatch
+                            drone = self.get_closest_unit_to_pos(obs, hatch.x, hatch.y, units.Zerg.Drone)
+                            return FUNCTIONS.select_point([0], (drone.x*2, drone.y*2))
+                        # If we have a drone check extractors for empty slots
+                        else:
+                            for extractor in extractors:
+                                if extractor.assigned_harvesters - extractor.ideal_harvesters < 0:
+                                    return FUNCTIONS.Smart_screen([0], (extractor.x * 2, extractor.y * 2))
+                    # Not excess harvesters -> move drone to this place
+                    else:
+                        if self.unit_type_is_selected(obs, units.Zerg.Drone) and 451 not in obs.observation.last_actions:
+                            mineral = self.get_closest_unit_to_pos(obs, buildings.x, buildings.y, units.Neutral.MineralField)
+                            return FUNCTIONS.Smart_screen([0], (mineral.x*2, mineral.y*2))
+        # If no excess or nowhere to put drone, build drone to continue
         return self.build_unit(obs, units.Zerg.Drone)
 
     def get_closest_unit_to_pos(self, obs, x, y, type):
@@ -201,19 +206,20 @@ class Overmind(base_agent.BaseAgent):
     def macro(self, obs):
         if obs.observation.player.idle_worker_count > 0:
             return self.redestribute_workers(obs)
-        if self.unit_type_is_selected(obs, units.Zerg.Overlord):
-            if 451 not in obs.observation.last_actions:
-                hatcheries = self.get_buildings(obs, units.Zerg.Hatchery)
-                if hatcheries[0].y < 100:
-                    return FUNCTIONS.Smart_screen("now", (0, 0))
-                else:
-                    return FUNCTIONS.Smart_screen("now", (350, 350))
+        # if self.unit_type_is_selected(obs, units.Zerg.Overlord):
+        #     if 451 not in obs.observation.last_actions:
+        #         hatcheries = self.get_buildings(obs, units.Zerg.Hatchery)
+        #         if hatcheries[0].y < 100:
+        #             return FUNCTIONS.Smart_screen("now", (0, 0))
+        #         else:
+        #             return FUNCTIONS.Smart_screen("now", (350, 350))
 
         dronenum = obs.observation.player['food_workers']
-        if (obs.observation.player['food_cap'] - obs.observation.player['food_used'] < 2):
+        if (obs.observation.player['food_cap'] - obs.observation.player['food_used'] < 2) \
+                and FUNCTIONS.Train_Overlord_quick.id not in obs.observation.last_actions:
             return self.build_unit(obs, units.Zerg.Overlord)
         # These buildings are essential and cannot be skipped
-        if dronenum > 17:
+        if dronenum > 15:
             if len(self.get_buildings(obs, units.Zerg.Hatchery)) == 1:
                 return self.build_building(obs, units.Zerg.Hatchery)
             if len(self.get_buildings(obs, units.Zerg.Extractor)) == 0:
@@ -223,7 +229,10 @@ class Overmind(base_agent.BaseAgent):
         if dronenum == 19:
             return self.redestribute_workers(obs)
             print("Drones in gas")
-        if dronenum == 20 and len(obs.observation.build_queue) < 2 and len(self.get_units_by_type(obs, units.Zerg.Queen)) > 0:
+        if dronenum > 20 and \
+                len(obs.observation.build_queue) <= 3 and \
+                len(self.get_units_by_type(obs, units.Zerg.Queen)) <= 4 and \
+                obs.observation.player.minerals > 150:
             return self.build_unit(obs, units.Zerg.Queen)
         if dronenum == 27:
             # if not self.zergSpeed:
@@ -248,8 +257,9 @@ class Overmind(base_agent.BaseAgent):
         if dronenum > 60:
             #ALL UPGRADES
             return self.build_unit(obs, units.Zerg.Roach)
-
-        return self.build_unit(obs, units.Zerg.Drone)
+        if dronenum < 80:
+            return self.build_unit(obs, units.Zerg.Drone)
+        return FUNCTIONS.no_op()
 
 
     #Each step
@@ -263,10 +273,10 @@ class Overmind(base_agent.BaseAgent):
             return FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
 
         # If nothing to macro
-        # if obs.observation.player['food_army'] < 30:
-        #     function = self.macro(obs)
-        #     print(function)
-        #     return function
+        if obs.observation.player['food_army'] < 10:
+            function = self.macro(obs)
+            print(function)
+            return function
 
         T = Translator()
 
@@ -277,9 +287,10 @@ class Overmind(base_agent.BaseAgent):
         featureLayers = (np.moveaxis((np.array(tFeatureLayers)), 0, 2)).reshape(-1, const.ScreenSize().x, const.ScreenSize().y, 12)
         prediction = self.model.predict(featureLayers)[0]
         action = translate(obs, prediction)
-        print(action)
+        print(action[0])
+        for pred in prediction:
+            print(pred)
         if (action[0] in obs.observation.available_actions):
-            print(action[0])
             return actions.FunctionCall(action[0], action[1:])
         else:
             print("No-op, Switching to Macro:")

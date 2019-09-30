@@ -392,6 +392,7 @@ def build_LSTM():
 
 def train_LSTM():
     model = ks.models.load_model("C:\Models\Conv2D-LSTM")
+    model.summary()
     #TDDs = get_training_data_dirs("training_data/482")
     #TDDs += get_training_data_dirs("training_data/493")
     TDDs = get_training_data_dirs("F:\\training_data\\All")
