@@ -27,14 +27,14 @@ from absl import app
 def main(unused_argv):
     #build_knet()
     #build_transformer()
-    # build_LSTM()
+#    build_LSTM()
     # Dynamically grow the memory used on GPU
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    sess = tf.Session(config=config)
-    set_session(sess)
-    for i in range(0, 100):
-        train_LSTM()
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True
+    # sess = tf.Session(config=config)
+    # set_session(sess)
+    # for i in range(0, 100):
+    train_LSTM()
 
     #transform_replay
     #Agent

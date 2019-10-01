@@ -9,7 +9,7 @@ import pickle
 
 import keras as ks
 from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Reshape, GlobalMaxPool2D, Input
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Reshape, Concatenate, Input
 from keras.callbacks import TensorBoard
 from keras.layers.advanced_activations import LeakyReLU
 from keras.backend.tensorflow_backend import set_session
@@ -76,7 +76,7 @@ def get_training_data_dirs(training_data_dir):
 def extract_data_dirs(dirs, num):
     # inputs = []
     # outputs = []
-    inouts = [[], []]
+    inouts = [[], [[], []]]
     print('Extracting files...')
     for file in range(0, num):
         print('\r', end='')
@@ -86,12 +86,15 @@ def extract_data_dirs(dirs, num):
         inarr = np.load(dirs[file], allow_pickle=True)
         # outputs.append(inarr['action'])
         # inputs.append(inarr['feature_layers'])
-        inouts[1].append(inarr['action'])
+        action = inarr['action']
+        inouts[1][0].append(action[:7])
+        inouts[1][1].append(action[7:])
         inouts[0].append(inarr['feature_layers'])
     # inputs = np.array(inputs)
     # outputs = np.array(outputs)
     inouts[0] = np.array(inouts[0])
-    inouts[1] = np.array(inouts[1])
+    inouts[1][0] = np.array(inouts[1][0])
+    inouts[1][1] = np.array(inouts[1][1])
     #print("Wait")
         #print("{}/{}".format(counter, all_files_size))
     return inouts#[inputs, outputs]
@@ -369,56 +372,60 @@ def build_LSTM():
     data_format = 'channels_last'
     inputs = Input(shape=(352, 352, 12))
 
-    layer1 = Conv2D(64, kernel_size=(5, 5))(inputs)
-    layer1 = (LeakyReLU(alpha=0.3))(layer1)
+    convlayer1 = Conv2D(64, kernel_size=(5, 5))(inputs)
+    convlayer1 = (LeakyReLU(alpha=0.3))(convlayer1)
+    poollayer1 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))(convlayer1)
+    layer1 = (Dropout(0.3))(poollayer1)
 
-    layer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
-    layer2 = (Dropout(0.3))
-    layer2 = (Conv2D(128, kernel_size=(3, 3), input_shape=(352, 352, 12)))#, activation=activation))
-    layer2 = (LeakyReLU(alpha=0.3))
-    layer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
-    layer2 = (Dropout(0.3))
-    layer2 = (Conv2D(256, kernel_size=(3, 3)))#, activation=activation))
-    layer2 = (LeakyReLU(alpha=0.3))
-    layer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
-    layer2 = (Dropout(0.3))
-    layer2 = (Flatten())
-    layer2 = (Dense(256))#, activation=activation))
-    layer2 = (LeakyReLU(alpha=0.3))
-    layer2 = (Reshape((1, 256)))
+    convlayer2 = (Conv2D(128, kernel_size=(3, 3)))(layer1)
+    #merge = Concatenate()([layer1, convlayer2])
+    convlayer2 = (LeakyReLU(alpha=0.3))(convlayer2)
+    poollayer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))(convlayer2)
+    layer2 = (Dropout(0.3))(poollayer2)
+
+    convlayer3 = (Conv2D(256, kernel_size=(3, 3)))(layer2)
+    convlayer3 = (LeakyReLU(alpha=0.3))(convlayer3)
+    poollayer3 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))(convlayer3)
+    layer3 = (Dropout(0.3))(poollayer3)
+
+    layer4 = (Flatten())(layer3)
+    layer4 = (Dense(256))(layer4)
+    layer4 = (LeakyReLU(alpha=0.3))(layer4)
+
+    layer5 = (Reshape((1, 256)))(layer4)
     # Add some memory
-    layer2 = (LSTM(256))
-    layer2 = (Dense(7, activation='softmax'))(bottleneck)
-    layer2 = (Dense(6))(bottleneck)
-    layer2 = (LeakyReLU(alpha=0.3))
+    layer5 = (LSTM(256))(layer5)
 
+    output1 = (Dense(7, activation='softmax'))(layer5)
+    output2 = (Dense(6))(layer5)
+    output2 = (LeakyReLU(alpha=0.3))(output2)
 
-    model.compile(loss={'categorical_crossentropy', 'mean_squared_error'},
+    model = Model(inputs, [output1, output2])
+    model.compile(loss=['categorical_crossentropy', 'mean_squared_error'],
                   optimizer="adam",
                   metrics=["accuracy"])
     model.summary()
-    model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
+    model.save("D:\\Charlie\\Models\\Conv2D-MultiLoss")
     return model
 
-def train_LSTM():
+def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
     # Dynamically grow the memory used on GPU
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     set_session(sess)
-    model = ks.models.load_model("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
-    batchSize = 2000
-    for i in range(0, 100):
-        TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\All")
+    model = ks.models.load_model("D:\\Charlie\\Models\\Conv2D-MultiLoss")
+    for i in range(0, loops):
+        TDDs = get_training_data_dirs("F:\\training_data\\All")
         # Whilst there's still data to train on
         while (len(TDDs) > 0):
             print("{} files left".format(len(TDDs)))
-            if len(TDDs) < batchSize:
+            if len(TDDs) < loadSize:
                 TD = extract_data_dirs(TDDs, len(TDDs))
                 TDDs.clear()
                 model.fit(TD[0], TD[1],
-                          batch_size=20,
-                          epochs=1,
+                          batch_size=batch_size,
+                          epochs=epochs,
                           validation_split=0.0,
                           shuffle=False, verbose=1)
                 TD.clear()
@@ -426,11 +433,11 @@ def train_LSTM():
                 # with open('/trainHistoryDict', 'wb') as file_pi:
                 #     pickle.dump(history.history, file_pi)
             else:
-                TD = extract_data_dirs(TDDs, batchSize)
-                TDDs = TDDs[batchSize:]
+                TD = extract_data_dirs(TDDs, loadSize)
+                TDDs = TDDs[loadSize:]
                 model.fit(TD[0], TD[1],
-                          batch_size=20,
-                          epochs=1,
+                          batch_size=batch_size,
+                          epochs=epochs,
                           validation_split=0.0,
                           shuffle=False, verbose=1)
                 TD.clear()
