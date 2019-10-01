@@ -8,10 +8,11 @@ import tensorflow.contrib.layers as layers
 import pickle
 
 import keras as ks
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Reshape
+from keras.models import Sequential, Model
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Reshape, GlobalMaxPool2D, Input
 from keras.callbacks import TensorBoard
 from keras.layers.advanced_activations import LeakyReLU
+from keras.backend.tensorflow_backend import set_session
 import gc
 #from keras_transformer import get_model
 
@@ -366,74 +367,82 @@ def build_LSTM():
     padding = 'valid'
     activation = 'relu'
     data_format = 'channels_last'
-    model = Sequential()
+    inputs = Input(shape=(352, 352, 12))
 
-    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=(352, 352, 12)))#, activation=activation))
-    model.add(LeakyReLU(alpha=0.3))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
-    model.add(Dropout(0.3))
-    model.add(Conv2D(128, kernel_size=(3, 3), input_shape=(352, 352, 12)))#, activation=activation))
-    model.add(LeakyReLU(alpha=0.3))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
-    model.add(Dropout(0.3))
-    model.add(Conv2D(256, kernel_size=(3, 3)))#, activation=activation))
-    model.add(LeakyReLU(alpha=0.3))
-    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
-    model.add(Dropout(0.3))
-    model.add(Flatten())
-    model.add(Dense(256))#, activation=activation))
-    model.add(LeakyReLU(alpha=0.3))
-    model.add(Reshape((1, 256)))
+    layer1 = Conv2D(64, kernel_size=(5, 5))(inputs)
+    layer1 = (LeakyReLU(alpha=0.3))(layer1)
+
+    layer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
+    layer2 = (Dropout(0.3))
+    layer2 = (Conv2D(128, kernel_size=(3, 3), input_shape=(352, 352, 12)))#, activation=activation))
+    layer2 = (LeakyReLU(alpha=0.3))
+    layer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
+    layer2 = (Dropout(0.3))
+    layer2 = (Conv2D(256, kernel_size=(3, 3)))#, activation=activation))
+    layer2 = (LeakyReLU(alpha=0.3))
+    layer2 = (MaxPooling2D(pool_size=(2, 2), strides=None, padding=padding, data_format=data_format))
+    layer2 = (Dropout(0.3))
+    layer2 = (Flatten())
+    layer2 = (Dense(256))#, activation=activation))
+    layer2 = (LeakyReLU(alpha=0.3))
+    layer2 = (Reshape((1, 256)))
     # Add some memory
-    model.add(LSTM(256))
-    model.add(Dense(13))#, activation=activation))
-    model.add(LeakyReLU(alpha=0.3))
-    model.summary()
+    layer2 = (LSTM(256))
+    layer2 = (Dense(7, activation='softmax'))(bottleneck)
+    layer2 = (Dense(6))(bottleneck)
+    layer2 = (LeakyReLU(alpha=0.3))
 
-    model.compile(loss='mean_squared_error',
+
+    model.compile(loss={'categorical_crossentropy', 'mean_squared_error'},
                   optimizer="adam",
                   metrics=["accuracy"])
-
+    model.summary()
     model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
     return model
 
 def train_LSTM():
+    # Dynamically grow the memory used on GPU
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.Session(config=config)
+    set_session(sess)
     model = ks.models.load_model("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
-    TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\All")
     batchSize = 2000
-    # Whilst there's still data to train on
-    while (len(TDDs) > 0):
-        print("{} files left".format(len(TDDs)))
-        if len(TDDs) < batchSize:
-            TD = extract_data_dirs(TDDs, len(TDDs))
-            TDDs.clear()
-            model.fit(TD[0], TD[1],
-                      batch_size=20,
-                      epochs=1,
-                      validation_split=0.0,
-                      shuffle=False, verbose=1)
-            TD.clear()
-            gc.collect()
-            # with open('/trainHistoryDict', 'wb') as file_pi:
-            #     pickle.dump(history.history, file_pi)
-        else:
-            TD = extract_data_dirs(TDDs, batchSize)
-            TDDs = TDDs[batchSize:]
-            model.fit(TD[0], TD[1],
-                      batch_size=20,
-                      epochs=1,
-                      validation_split=0.0,
-                      shuffle=False, verbose=1)
-            TD.clear()
-            gc.collect()
-            # with open('/trainHistoryDict', 'wb') as file_pi:
-            #     pickle.dump(history.history, file_pi)
-    model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
-    del model
-    del TD
-    del TDDs
-    for i in range(20):
-        gc.collect()
+    for i in range(0, 100):
+        TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\All")
+        # Whilst there's still data to train on
+        while (len(TDDs) > 0):
+            print("{} files left".format(len(TDDs)))
+            if len(TDDs) < batchSize:
+                TD = extract_data_dirs(TDDs, len(TDDs))
+                TDDs.clear()
+                model.fit(TD[0], TD[1],
+                          batch_size=20,
+                          epochs=1,
+                          validation_split=0.0,
+                          shuffle=False, verbose=1)
+                TD.clear()
+                gc.collect()
+                # with open('/trainHistoryDict', 'wb') as file_pi:
+                #     pickle.dump(history.history, file_pi)
+            else:
+                TD = extract_data_dirs(TDDs, batchSize)
+                TDDs = TDDs[batchSize:]
+                model.fit(TD[0], TD[1],
+                          batch_size=20,
+                          epochs=1,
+                          validation_split=0.0,
+                          shuffle=False, verbose=1)
+                TD.clear()
+                gc.collect()
+                # with open('/trainHistoryDict', 'wb') as file_pi:
+                #     pickle.dump(history.history, file_pi)
+        model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
+    # del model
+    # del TD
+    # del TDDs
+    # for i in range(20):
+    #     gc.collect()
     return 0
 
 #Tensorflow
