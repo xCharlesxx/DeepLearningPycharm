@@ -56,16 +56,16 @@ def use_ability(x, y, type, available):
     act.append([x * const.ScreenSize().x, y * const.ScreenSize().x])
     return act
 def translate(obs, prediction):
-    choice = prediction[:7]
+    choice = prediction[0]
     m = max(choice)
     choice = [i for i, j in enumerate(choice) if j == m]
     choices = {
-     0: select_point(prediction[7], prediction[8], prediction[9]),
-     1: select_rect(prediction[8], prediction[9], prediction[10], prediction[11]),
-     2: smart_screen(prediction[8], prediction[9]),
-     3: attack_point(prediction[8], prediction[9]),
+     0: select_point(prediction[1][0], prediction[1][1], prediction[1][2]),
+     1: select_rect(prediction[1][1], prediction[1][2], prediction[1][3], prediction[1][4]),
+     2: smart_screen(prediction[1][1], prediction[1][2]),
+     3: attack_point(prediction[1][1], prediction[1][2]),
      4: hold_pos,
      5: select_army,
-     6: use_ability(prediction[8], prediction[9], prediction[12], obs.observation.available_actions)
+     6: use_ability(prediction[1][1], prediction[1][2], prediction[1][5], obs.observation.available_actions)
     }
     return choices.get(choice[0])
