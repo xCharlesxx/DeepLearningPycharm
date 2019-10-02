@@ -396,9 +396,9 @@ def build_LSTM():
     # Add some memory
     layer5 = (LSTM(256))(layer5)
 
-    output1 = (Dense(7, activation='softmax'))(layer5)
+    output1 = (Dense(7, activation='softmax', name='Action'))(layer5)
     output2 = (Dense(6))(layer5)
-    output2 = (LeakyReLU(alpha=0.3))(output2)
+    output2 = (LeakyReLU(alpha=0.3, name='Parameters'))(output2)
 
     model = Model(inputs, [output1, output2])
     model.compile(loss=['categorical_crossentropy', 'mean_squared_error'],
