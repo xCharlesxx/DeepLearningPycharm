@@ -13,6 +13,7 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, LSTM, Re
 from keras.callbacks import TensorBoard
 from keras.layers.advanced_activations import LeakyReLU
 from keras.backend.tensorflow_backend import set_session
+from keras.constraints import nonneg
 import gc
 #from keras_transformer import get_model
 
@@ -98,6 +99,23 @@ def extract_data_dirs(dirs, num):
     #print("Wait")
         #print("{}/{}".format(counter, all_files_size))
     return inouts#[inputs, outputs]
+
+def sort_data_dirs(dirs):
+    for file in dirs:
+        arr = np.load(file, allow_pickle=True)
+        if arr['action'][1] == 1:
+            os.remove(file)
+            print("Removed Box")
+            continue
+        if arr['action'][4] == 1:
+            os.remove(file)
+            print("Removed HoldPos")
+            continue
+        b4 = arr['action']
+        afr= np.array([arr['action'][0], arr['action'][2], arr['action'][3],
+                                  arr['action'][5], arr['action'][6], arr['action'][7],
+                                  arr['action'][8], arr['action'][9], arr['action'][12]])
+        np.savez_compressed(file, action=afr, feature_layers=arr['feature_layers'])
 
 
 def translate_outputs_to_NN(output):
@@ -370,6 +388,7 @@ def build_LSTM():
     padding = 'valid'
     activation = 'relu'
     data_format = 'channels_last'
+    ks.constraints.non_neg()
     inputs = Input(shape=(352, 352, 12))
 
     convlayer1 = Conv2D(64, kernel_size=(5, 5))(inputs)
@@ -396,8 +415,8 @@ def build_LSTM():
     # Add some memory
     layer5 = (LSTM(256))(layer5)
 
-    output1 = (Dense(7, activation='softmax', name='Action'))(layer5)
-    output2 = (Dense(6))(layer5)
+    output1 = (Dense(5, activation='softmax', name='Action'))(layer5)
+    output2 = (Dense(4, W_constraint=nonneg()))(layer5)
     output2 = (LeakyReLU(alpha=0.3, name='Parameters'))(output2)
 
     model = Model(inputs, [output1, output2])
@@ -417,6 +436,7 @@ def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
     model = ks.models.load_model("D:\\Charlie\\Models\\Conv2D-MultiLoss")
     for i in range(0, loops):
         TDDs = get_training_data_dirs("F:\\training_data\\All")
+        sort_data_dirs(TDDs)
         # Whilst there's still data to train on
         while (len(TDDs) > 0):
             print("{} files left".format(len(TDDs)))
@@ -444,7 +464,7 @@ def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
                 gc.collect()
                 # with open('/trainHistoryDict', 'wb') as file_pi:
                 #     pickle.dump(history.history, file_pi)
-        model.save("C:\\Users\\Charlie\\Models\\Conv2D-LSTM")
+        model.save("C:\\Charlie\\Models\\Conv2D-LSTM")
     # del model
     # del TD
     # del TDDs

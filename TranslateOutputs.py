@@ -52,6 +52,8 @@ def select_army():
     return act
 def use_ability(x, y, type, available):
     act = [get_closest_ability(type, available)]
+    if act == 0:
+        return [0]
     act.append([int(0)])
     act.append([x * const.ScreenSize().x, y * const.ScreenSize().x])
     return act
