@@ -25,7 +25,7 @@ cpus = multiprocessing.cpu_count()
 #LearningReplays\\482KC\\
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
-flags.DEFINE_string("replays", "C:\Program Files (x86)\StarCraft II\Replays\\LearningReplays\\493KC\\", "Path to the replay files.")
+flags.DEFINE_string("replays", "D:\\Charlie\\DeepLearning\\OldReplays\\Replays", "Path to the replay files.")
 flags.DEFINE_string("agent", "ObserverAgent.ObserverAgent", "Path to an agent.")
 flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
@@ -51,7 +51,7 @@ class Parser: #612
 
         self.run_config = run_configs.get()
         versions = self.run_config.get_versions()
-        self.sc2_proc = self.run_config.start(version=versions['4.9.3'])
+        self.sc2_proc = self.run_config.start(version=versions['3.16.1'])
 
         self.controller = self.sc2_proc.controller
         ping = self.controller.ping()
@@ -62,8 +62,8 @@ class Parser: #612
         except Exception as e:
             raise Exception(e)
 
-        if not self._valid_replay(self, self.info, ping):
-            raise Exception("{} is not a valid replay file!".format(replay_file_path))
+        # if not self._valid_replay(self, self.info, ping):
+        #     raise Exception("{} is not a valid replay file!".format(replay_file_path))
 
         _screen_size_px = point.Point(*self.screen_size_px)
         _minimap_size_px = point.Point(*self.minimap_size_px)
@@ -97,44 +97,45 @@ class Parser: #612
         if (info.base_build != ping.base_build): # different game version
            print("Build Mismatch:\nBase: {}\nReplay: {}".format(ping.base_build, info.base_build))
            return False 
-        if (info.game_duration_loops < 100):
+        if (info.game_duration_loops < 1000): # 1 min
             print("Replay not long enough, loops: {}".format(info.game_duration_loops))
+            return False
+        if (info.game_duration_loops > 30000): # 30 mins
+            print("Replay too long, loops: {}".format(info.game_duration_loops))
             return False
         if (len(info.player_info) != 2):
             print("Replay: Possible corruption")
             return False
         if (info.map_name != 'King\'s Cove LE'):
-            print("Replay: Not defined map")
-            #return False
+            print("Replay: Not defined map, this map is {}".format(info.map_name))
+            return False
 
         player1 = sc_common.Race.Name(info.player_info[0].player_info.race_actual)
         player2 = sc_common.Race.Name(info.player_info[1].player_info.race_actual)
-        result = sc_pb.Result.Name(info.player_info[0].player_result.result)
-        if (sc_common.Race.Name(info.player_info[0].player_info.race_actual) == 'Zerg' and
-                sc_common.Race.Name(info.player_info[1].player_info.race_actual) != 'Protoss'):
+
+        if player1 == 'Zerg' and player2 == 'Terran':
             self.player_id = 1
-        elif (sc_common.Race.Name(info.player_info[0].player_info.race_actual) != 'Protoss' and
-              sc_common.Race.Name(info.player_info[1].player_info.race_actual) == 'Zerg'):
+        elif player1 == 'Terran' and player2 == 'Zerg':
             self.player_id = 2
         else:
             print("Replay: Incorrect race match-up")
-            #return False
-        if (info.player_info[self.player_id-1].player_mmr < 1000):
-            print("Low MMR player")
-        if (sc_pb.Result.Name(info.player_info[0].player_result.result) != 'Victory'):
+            return False
+        result = sc_pb.Result.Name(info.player_info[self.player_id-1].player_result.result)
+        if (result != 'Victory'):
             print("Replay: Player 1 does not win")
 
-#   for p in info.player_info:
-#       if p.player_apm < 10 or p.player_mmr < 1000:
-#           # Low APM = player just standing around.
-#           # Low MMR = corrupt replay or player who is weak.
-#           return False
+        for p in info.player_info:
+            if p.player_apm < 10 or p.player_mmr < 1000:
+                # Low APM = player just standing around.
+                # Low MMR = corrupt replay or player who is weak.
+                print("Low MMR player")
+                return False
         return True
 
     def start(self):
         print("Hello we are in Start")
         step_mul = 1
-        trainingDataPath = 'G:/training_data/'
+        trainingDataPath = 'F:/training_data/486/'
         _features = features.features_from_game_info(self.controller.game_info(), use_camera_position=True)
         #print("world_tl_to_world_camera_rel: {}\n\nworld_to_feature_screen_px: {}\n\nworld_to_world_tl: {}".format(_features._world_tl_to_world_camera_rel,
         #                                                                              _features._world_to_feature_screen_px,
@@ -149,11 +150,11 @@ class Parser: #612
         dirname = os.path.dirname(fileName)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        keyboard = Controller()
-        time.sleep(1)
-        keyboard.press(str(self.player_id))
-        time.sleep(0.5)
-        keyboard.release(str(self.player_id))
+        # keyboard = Controller()
+        # time.sleep(1)
+        # keyboard.press(str(self.player_id))
+        # time.sleep(0.5)
+        # keyboard.release(str(self.player_id))
         while True:
 
             #Takes one step through the replay

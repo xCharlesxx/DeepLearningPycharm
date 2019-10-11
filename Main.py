@@ -27,7 +27,7 @@ from absl import app
 def main(unused_argv):
     #build_knet()
     #build_transformer()
-#    build_LSTM()
+    #build_LSTM()
     # Dynamically grow the memory used on GPU
     # config = tf.ConfigProto()
     # config.gpu_options.allow_growth = True
@@ -60,7 +60,7 @@ def main(unused_argv):
                 #Max steps per game (0 is infinite)
                 game_steps_per_episode=0,
                 #visualize pysc2 input layers 
-                visualize=True,
+                visualize=False,
                 #Play-back-time
                 realtime=False,
                 #Fog of War
