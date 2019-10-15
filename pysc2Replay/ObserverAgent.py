@@ -20,11 +20,12 @@ class ObserverAgent(base_agent.BaseAgent):
     def __init__(self):
         self.states = []
         self.count = 0;
+        self.episodes = 0;
         self.action_dict = {
                 #select point
                 2: self.select_point,
                 #select rect 
-                3: self.double_select_point,
+                #3: self.double_select_point,
                 #smart minimap 
                 452: self.single_select_point,
                 #attack minimap 
@@ -75,9 +76,9 @@ class ObserverAgent(base_agent.BaseAgent):
                 #viper consume 
                 243: self.single_select_point,
                 #hold position quick 
-                274: self.single_q,
+                #274: self.single_q,
                 #stop quick
-                453: self.single_q,
+                #453: self.single_q,
                 #select army 
                 7: self.single_q
                     }
@@ -116,8 +117,8 @@ class ObserverAgent(base_agent.BaseAgent):
             return "Unknown"
             #return self.single_select_point(args[:-1])
         list = [[0]]
-        list.append([(args[1][0]/2) + self.cam_pos_offset[0], (args[1][1]/2) + self.cam_pos_offset[1]])
-        list.append([(args[2][0]/2) + self.cam_pos_offset[0], (args[2][1]/2) + self.cam_pos_offset[1]])
+        list.append([((args[1][0]/2) + self.cam_pos_offset[0])*2, ((args[1][1]/2) + self.cam_pos_offset[1])*2])
+        list.append([((args[2][0]/2) + self.cam_pos_offset[0])*2, ((args[2][1]/2) + self.cam_pos_offset[1])*2])
         return list
     def single_q(self, args):
         return [[0]]
@@ -149,6 +150,7 @@ class ObserverAgent(base_agent.BaseAgent):
 
     def step(self, time_step, info, act):
         #print(time_step.observation.camera_position)
+
         # Screen is double world units so center point would be worldSize
         self.cam_pos_offset = [(time_step.observation.camera_position[0] - const.WorldSize().x),
                                (time_step.observation.camera_position[1] - const.WorldSize().y)]
@@ -161,10 +163,10 @@ class ObserverAgent(base_agent.BaseAgent):
         # print("\n")
         state = {"action": [self.extract_args(int(act.function), act.arguments)]}
         #print(act.function)
-        print(state["action"])
-        if ("Unknown" in state["action"][0]):
-            return 0
         #print(state["action"])
+        if ("Unknown" in state["action"][0]):
+           return 0
+        print(state["action"])
         height_map = time_step.observation.feature_screen[0]
         #Remove all Zero lines 
         height_map = height_map[~np.all(height_map == 0, axis=1)]
@@ -192,6 +194,8 @@ class ObserverAgent(base_agent.BaseAgent):
         #return
         # print("Start")
         # print(datetime.datetime.now().time())
+        #return sc_action.FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
+        #return sc_action.FUNCTIONS.no_op()
         T = Translator()
 
         tFeatureLayers = T.translate_feature_layers(T.crop_feature_layers(time_step.observation.feature_screen[0],

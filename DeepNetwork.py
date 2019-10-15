@@ -66,12 +66,14 @@ def get_training_data(training_data_dir):
 
 def get_training_data_dirs(training_data_dir):
     all_folders = os.listdir(training_data_dir)
-    all_files = []
+    folders = []
     for folder in all_folders:
+        files = []
         for file in natsort.natsorted(os.listdir(os.path.join(training_data_dir, folder))):
-            all_files.append(os.path.join(training_data_dir, folder, file))
-    all_files_size = len([num for num in all_files])
-    return all_files
+            files.append(os.path.join(training_data_dir, folder, file))
+        folders.append(files)
+    # all_files_size = len([num for num in all_files])
+    return folders
 
 
 def extract_data_dirs(dirs, num):
@@ -88,8 +90,8 @@ def extract_data_dirs(dirs, num):
         # outputs.append(inarr['action'])
         # inputs.append(inarr['feature_layers'])
         action = inarr['action']
-        inouts[1][0].append(action[:7])
-        inouts[1][1].append(action[7:])
+        inouts[1][0].append(action[:5])
+        inouts[1][1].append(action[5:])
         inouts[0].append(inarr['feature_layers'])
     # inputs = np.array(inputs)
     # outputs = np.array(outputs)
@@ -100,26 +102,29 @@ def extract_data_dirs(dirs, num):
         #print("{}/{}".format(counter, all_files_size))
     return inouts#[inputs, outputs]
 
-def sort_data_dirs(dirs):
-    for file in dirs:
+def sort_data_dirs():
+    for file in get_training_data_dirs("C:\\Users\\Charlie\\training_data\\All"):
         arr = np.load(file, allow_pickle=True)
-        if arr['action'][1] == 1:
-            os.remove(file)
-            print("Removed Box")
-            continue
-        if arr['action'][4] == 1:
-            os.remove(file)
-            print("Removed HoldPos")
-            continue
         b4 = arr['action']
-        afr= np.array([arr['action'][0], arr['action'][2], arr['action'][3],
-                                  arr['action'][5], arr['action'][6], arr['action'][7],
-                                  arr['action'][8], arr['action'][9], arr['action'][12]])
-        np.savez_compressed(file, action=afr, feature_layers=arr['feature_layers'])
+        if len(b4) == 13:
+            if arr['action'][1] == 1:
+                arr.close()
+                os.remove(file)
+                print("Removed Box")
+                continue
+            if arr['action'][4] == 1:
+                arr.close()
+                os.remove(file)
+                print("Removed HoldPos")
+                continue
+            afr = np.array([arr['action'][0], arr['action'][2], arr['action'][3],
+                                      arr['action'][5], arr['action'][6], arr['action'][7],
+                                      arr['action'][8], arr['action'][9], arr['action'][12]])
+            np.savez_compressed(file, action=afr, feature_layers=arr['feature_layers'])
 
 
 def translate_outputs_to_NN(output):
-    trans_outputs = np.zeros([13], float)
+    trans_outputs = np.zeros([9], float)
     position = 0;
     for cell in output:
         try:
@@ -143,7 +148,7 @@ def translate_outputs_to_NN(output):
                 position += 1
                 #print("{} -> {}".format(cell, translated))
     if (output[0] in ability_dict):
-        trans_outputs[12] = ability_dict[output[0]]
+        trans_outputs[8] = ability_dict[output[0]]
     return trans_outputs
 def position_translation(position, value):
     #Action
@@ -152,29 +157,29 @@ def position_translation(position, value):
         if (value in [2]):
             return [0, 1]
         #Select rect
-        elif (value in [3]):
-            return [1, 1]
+        # elif (value in [3]):
+        #     return [1, 1]
         #Smart screen
         elif (value in [451, 452]):
-            return [2, 1]
+            return [1, 1]
         #Attack screen
         elif (value in [13, 17, 12, 14, 16]):
-            return [3, 1]
+            return [2, 1]
         #Hold pos
-        elif (value in [274,453]):
-            return [4, 1]
+        # elif (value in [274,453]):
+        #     return [4, 1]
         #Select army
         elif (value in [7]):
-            return [5, 1]
+            return [3, 1]
         #Use ability
         else:
-            return [6, 1]
+            return [4, 1]
     #Stack action
     if (position == 1):
-        return [7, value[0] / 4]
+        return [5, value[0] / 4]
     #Coordinates
     if (position >= 2):
-        return [position + 6, value / const.ScreenSize().x]
+        return [position + 4, value / const.ScreenSize().x]
     print("Something went wrong in position_translation")
     return 0
 
@@ -416,7 +421,7 @@ def build_LSTM():
     layer5 = (LSTM(256))(layer5)
 
     output1 = (Dense(5, activation='softmax', name='Action'))(layer5)
-    output2 = (Dense(4, W_constraint=nonneg()))(layer5)
+    output2 = (Dense(4, W_constraint=nonneg()))(layer4)
     output2 = (LeakyReLU(alpha=0.3, name='Parameters'))(output2)
 
     model = Model(inputs, [output1, output2])
@@ -424,25 +429,25 @@ def build_LSTM():
                   optimizer="adam",
                   metrics=["accuracy"])
     model.summary()
-    model.save("D:\\Charlie\\Models\\Conv2D-MultiLoss")
+    model.save("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
     return model
 
-def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
+def train_LSTM(loops = 100, loadSize = 2000, batch_size = 20, epochs = 1):
     # Dynamically grow the memory used on GPU
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     set_session(sess)
-    model = ks.models.load_model("D:\\Charlie\\Models\\Conv2D-MultiLoss")
+    model = ks.models.load_model("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
     for i in range(0, loops):
-        TDDs = get_training_data_dirs("F:\\training_data\\All")
-        sort_data_dirs(TDDs)
+        TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\4101\\")
+        #random.shuffle(TDDs)
         # Whilst there's still data to train on
         while (len(TDDs) > 0):
-            print("{} files left".format(len(TDDs)))
-            if len(TDDs) < loadSize:
-                TD = extract_data_dirs(TDDs, len(TDDs))
-                TDDs.clear()
+            print("{} replays left".format(len(TDDs)))
+            if len(TDDs[0]) < loadSize:
+                TD = extract_data_dirs(TDDs[0], len(TDDs[0]))
+                del TDDs[0]
                 model.fit(TD[0], TD[1],
                           batch_size=batch_size,
                           epochs=epochs,
@@ -453,8 +458,9 @@ def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
                 # with open('/trainHistoryDict', 'wb') as file_pi:
                 #     pickle.dump(history.history, file_pi)
             else:
-                TD = extract_data_dirs(TDDs, loadSize)
-                TDDs = TDDs[loadSize:]
+                TD = extract_data_dirs(TDDs[0], loadSize)
+                #TDDs = TDDs[loadSize:]
+                del TDDs[0]
                 model.fit(TD[0], TD[1],
                           batch_size=batch_size,
                           epochs=epochs,
@@ -464,7 +470,7 @@ def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
                 gc.collect()
                 # with open('/trainHistoryDict', 'wb') as file_pi:
                 #     pickle.dump(history.history, file_pi)
-        model.save("C:\\Charlie\\Models\\Conv2D-LSTM")
+        model.save("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
     # del model
     # del TD
     # del TDDs
@@ -473,62 +479,62 @@ def train_LSTM(loops = 100, loadSize = 200, batch_size = 20, epochs = 1):
     return 0
 
 #Tensorflow
-def build_net(input, info, num_action):
-    mconv1 = layers.conv2d(tf.transpose(input, [0, 2, 3, 1]),
-                            num_outputs=16,
-                            kernel_size=8,
-                            stride=4,
-                            scope='mconv1')
-    mconv2 = layers.conv2d(mconv1,
-                            num_outputs=32,
-                            kernel_size=4,
-                            stride=2,
-                            scope='mconv2')
-    info_fc = layers.fully_connected(layers.flatten(info),
-                                    num_outputs=256,
-                                    activation_fn=tf.tanh,
-                                    scope='info_fc')
+# def build_net(input, info, num_action):
+#     mconv1 = layers.conv2d(tf.transpose(input, [0, 2, 3, 1]),
+#                             num_outputs=16,
+#                             kernel_size=8,
+#                             stride=4,
+#                             scope='mconv1')
+#     mconv2 = layers.conv2d(mconv1,
+#                             num_outputs=32,
+#                             kernel_size=4,
+#                             stride=2,
+#                             scope='mconv2')
+#     info_fc = layers.fully_connected(layers.flatten(info),
+#                                     num_outputs=256,
+#                                     activation_fn=tf.tanh,
+#                                     scope='info_fc')
+#
+#     # Compute spatial actions, non spatial actions and value
+#     feat_fc = tf.concat([layers.flatten(mconv2), info_fc], axis=1)
+#     feat_fc = layers.fully_connected(feat_fc,
+#                                     num_outputs=256,
+#                                     activation_fn=tf.nn.relu,
+#                                     scope='feat_fc')
+#
+#     return spatial_action, non_spatial_action, value
 
-    # Compute spatial actions, non spatial actions and value
-    feat_fc = tf.concat([layers.flatten(mconv2), info_fc], axis=1)
-    feat_fc = layers.fully_connected(feat_fc,
-                                    num_outputs=256,
-                                    activation_fn=tf.nn.relu,
-                                    scope='feat_fc')
 
-    return spatial_action, non_spatial_action, value
-
-
-def build_transformer():
-
-    #TransformerBlock is a pseudo-layer combining together all nuts and bolts to assemble
-    #a complete section of both the Transformer and the Universal Transformer
-    #models, following description from the "Universal Transformers" paper.
-    #Each such block is, essentially:
-    #- Multi-head self-attention (masked or unmasked, with attention dropout,
-    #  but without input dropout)
-    #- Residual connection,
-    #- Dropout
-    #- Layer normalization
-    #- Transition function
-    #- Residual connection
-    #- Dropout
-    #- Layer normalization
-
-    transformer_block = TransformerBlock(
-        name='transformer',
-        num_heads=8,
-        residual_dropout=0.1,
-        attention_dropout=0.1,
-        use_masking=True)
-    add_coordinate_embedding = TransformerCoordinateEmbedding(
-        transformer_depth,
-        name='coordinate_embedding')
-    
-    output = transformer_input # shape: (<batch size>, <sequence length>, <input size>)
-    for step in range(transformer_depth):
-        output = transformer_block(
-            add_coordinate_embedding(output, step=step))
-
-    return 0
+# def build_transformer():
+#
+#     #TransformerBlock is a pseudo-layer combining together all nuts and bolts to assemble
+#     #a complete section of both the Transformer and the Universal Transformer
+#     #models, following description from the "Universal Transformers" paper.
+#     #Each such block is, essentially:
+#     #- Multi-head self-attention (masked or unmasked, with attention dropout,
+#     #  but without input dropout)
+#     #- Residual connection,
+#     #- Dropout
+#     #- Layer normalization
+#     #- Transition function
+#     #- Residual connection
+#     #- Dropout
+#     #- Layer normalization
+#
+#     transformer_block = TransformerBlock(
+#         name='transformer',
+#         num_heads=8,
+#         residual_dropout=0.1,
+#         attention_dropout=0.1,
+#         use_masking=True)
+#     add_coordinate_embedding = TransformerCoordinateEmbedding(
+#         transformer_depth,
+#         name='coordinate_embedding')
+#
+#     output = transformer_input # shape: (<batch size>, <sequence length>, <input size>)
+#     for step in range(transformer_depth):
+#         output = transformer_block(
+#             add_coordinate_embedding(output, step=step))
+#
+#     return 0
 
