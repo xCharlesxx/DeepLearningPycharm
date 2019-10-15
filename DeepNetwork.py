@@ -421,8 +421,8 @@ def build_LSTM():
     layer5 = (LSTM(256))(layer5)
 
     output1 = (Dense(5, activation='softmax', name='Action'))(layer5)
-    output2 = (Dense(4, W_constraint=nonneg()))(layer4)
-    output2 = (LeakyReLU(alpha=0.3, name='Parameters'))(output2)
+    output2 = (Dense(4, activation='sigmoid', name='Parameters'))(layer4)
+    #output2 = (LeakyReLU(alpha=0.3, name='Parameters'))(output2)
 
     model = Model(inputs, [output1, output2])
     model.compile(loss=['categorical_crossentropy', 'mean_squared_error'],
@@ -438,7 +438,7 @@ def train_LSTM(loops = 100, loadSize = 2000, batch_size = 20, epochs = 1):
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     set_session(sess)
-    model = ks.models.load_model("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
+    model = ks.models.load_model("D:\\Charlie\\Models\\Conv2D-noobs")
     for i in range(0, loops):
         TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\4101\\")
         #random.shuffle(TDDs)
