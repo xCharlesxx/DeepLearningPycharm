@@ -421,7 +421,7 @@ def build_LSTM():
     layer5 = (LSTM(256))(layer5)
 
     output1 = (Dense(5, activation='softmax', name='Action'))(layer5)
-    output2 = (Dense(4, activation='sigmoid', name='Parameters'))(layer4)
+    output2 = (Dense(4, activation='sigmoid', name='Parameters'))(layer5)
     #output2 = (LeakyReLU(alpha=0.3, name='Parameters'))(output2)
 
     model = Model(inputs, [output1, output2])
@@ -432,13 +432,29 @@ def build_LSTM():
     model.save("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
     return model
 
-def train_LSTM(loops = 100, loadSize = 2000, batch_size = 20, epochs = 1):
+def check_replay():
+    TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\4101\\")
+    number = 0
+    for TDD in TDDs:
+        print("Replay: {}".format(number))
+        number = number + 1
+        # Get first frame of game
+        TD = extract_data_dirs(TDDs[0], 1)
+        for x in range(0, len(TD[0][0])):
+            for y in TD[0][0][x]:
+                # 5 = enemy units
+                if y[5] == 1:
+                    print("Corrupted")
+
+
+
+def train_LSTM(loops = 100, loadSize = 4000, batch_size = 20, epochs = 1):
     # Dynamically grow the memory used on GPU
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
     set_session(sess)
-    model = ks.models.load_model("D:\\Charlie\\Models\\Conv2D-noobs")
+    model = ks.models.load_model("C:\\Users\\Charlie\\Models\\Conv2D-noobs - 1st Gen")
     for i in range(0, loops):
         TDDs = get_training_data_dirs("C:\\Users\\Charlie\\training_data\\4101\\")
         #random.shuffle(TDDs)
@@ -448,19 +464,23 @@ def train_LSTM(loops = 100, loadSize = 2000, batch_size = 20, epochs = 1):
             if len(TDDs[0]) < loadSize:
                 TD = extract_data_dirs(TDDs[0], len(TDDs[0]))
                 del TDDs[0]
-                model.fit(TD[0], TD[1],
-                          batch_size=batch_size,
-                          epochs=epochs,
-                          validation_split=0.0,
-                          shuffle=False, verbose=1)
+                if TD[0].ndim == 4:
+                    model.fit(TD[0], TD[1],
+                              batch_size=batch_size,
+                              epochs=epochs,
+                              validation_split=0.0,
+                              shuffle=False, verbose=1)
+                    print("Saved...")
+                    model.save("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
                 TD.clear()
                 gc.collect()
+
                 # with open('/trainHistoryDict', 'wb') as file_pi:
                 #     pickle.dump(history.history, file_pi)
             else:
                 TD = extract_data_dirs(TDDs[0], loadSize)
-                #TDDs = TDDs[loadSize:]
-                del TDDs[0]
+                TDDs = TDDs[loadSize:]
+                #del TDDs[0]
                 model.fit(TD[0], TD[1],
                           batch_size=batch_size,
                           epochs=epochs,
@@ -470,7 +490,7 @@ def train_LSTM(loops = 100, loadSize = 2000, batch_size = 20, epochs = 1):
                 gc.collect()
                 # with open('/trainHistoryDict', 'wb') as file_pi:
                 #     pickle.dump(history.history, file_pi)
-        model.save("C:\\Users\\Charlie\\Models\\Conv2D-noobs")
+
     # del model
     # del TD
     # del TDDs

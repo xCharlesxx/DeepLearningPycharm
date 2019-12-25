@@ -62,12 +62,12 @@ def translate(obs, prediction):
     m = max(choice)
     choice = [i for i, j in enumerate(choice) if j == m]
     choices = {
-     0: select_point(prediction[1][0], prediction[1][1], prediction[1][2]),
-     #1: select_rect(prediction[1][1], prediction[1][2], prediction[1][3], prediction[1][4]),
-     1: smart_screen(prediction[1][1], prediction[1][2]),
-     2: attack_point(prediction[1][1], prediction[1][2]),
+     0: select_point(prediction[0][0], prediction[0][1], prediction[0][2]),
+     #1: select_rect(prediction[0][1], prediction[0][2], prediction[1][3], prediction[1][4]),
+     1: smart_screen(prediction[0][1], prediction[0][2]),
+     2: attack_point(prediction[0][1], prediction[0][2]),
      #4: hold_pos,
      3: select_army,
-     4: use_ability(prediction[1][1], prediction[1][2], prediction[1][3], obs.observation.available_actions)
+     4: use_ability(prediction[0][1], prediction[0][2], prediction[0][3], obs.observation.available_actions)
     }
     return choices.get(choice[0])

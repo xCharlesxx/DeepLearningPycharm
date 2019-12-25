@@ -25,11 +25,11 @@ cpus = multiprocessing.cpu_count()
 #LearningReplays\\482KC\\
 FLAGS = flags.FLAGS
 FLAGS(sys.argv)
-flags.DEFINE_string("replays", "D:\\Charlie\\DeepLearning\\OldReplays\\Replays", "Path to the replay files.")
+flags.DEFINE_string("replays", "C:\\replaywinners\\", "Path to the replay files.")
 flags.DEFINE_string("agent", "ObserverAgent.ObserverAgent", "Path to an agent.")
 flags.DEFINE_integer("procs", cpus, "Number of processes.", lower_bound=1)
 flags.DEFINE_integer("start", 0, "Start at replay no.", lower_bound=0)
-flags.DEFINE_integer("batch", 1, "Size of replay batch for each process", lower_bound=1, upper_bound=512)
+flags.DEFINE_integer("batch", 1, "Size of replay batch for each process")
 
 class Parser: #612
     screen_size_px=(const.WorldSize().x*4, const.WorldSize().x*4)
@@ -51,7 +51,7 @@ class Parser: #612
 
         self.run_config = run_configs.get()
         versions = self.run_config.get_versions()
-        self.sc2_proc = self.run_config.start(version=versions['3.16.1'])
+        self.sc2_proc = self.run_config.start(version=versions['4.10.1'])
 
         self.controller = self.sc2_proc.controller
         ping = self.controller.ping()
@@ -62,9 +62,9 @@ class Parser: #612
         except Exception as e:
             raise Exception(e)
 
-        # if not self._valid_replay(self, self.info, ping):
-        #     raise Exception("{} is not a valid replay file!".format(replay_file_path))
-
+        if not self._valid_replay(self, self.info, ping):
+        #     #os.remove(replay_file_path)
+            raise Exception("{} Was a loser".format(replay_file_path))
         _screen_size_px = point.Point(*self.screen_size_px)
         _minimap_size_px = point.Point(*self.minimap_size_px)
         interface = sc_pb.InterfaceOptions(
@@ -97,16 +97,16 @@ class Parser: #612
         if (info.base_build != ping.base_build): # different game version
            print("Build Mismatch:\nBase: {}\nReplay: {}".format(ping.base_build, info.base_build))
            return False 
-        if (info.game_duration_loops < 1000): # 1 min
+        if (info.game_duration_loops < 1000): # mins 3
             print("Replay not long enough, loops: {}".format(info.game_duration_loops))
             return False
-        if (info.game_duration_loops > 30000): # 30 mins
+        if (info.game_duration_loops > 30000): #~25 mins
             print("Replay too long, loops: {}".format(info.game_duration_loops))
             return False
         if (len(info.player_info) != 2):
             print("Replay: Possible corruption")
             return False
-        if (info.map_name != 'King\'s Cove LE'):
+        if (info.map_name != "King's Cove LE"):
             print("Replay: Not defined map, this map is {}".format(info.map_name))
             return False
 
@@ -118,11 +118,12 @@ class Parser: #612
         elif player1 == 'Terran' and player2 == 'Zerg':
             self.player_id = 2
         else:
-            print("Replay: Incorrect race match-up")
+            print("Replay: Incorrect race match-up: {} vs {}".format(player1, player2))
             return False
         result = sc_pb.Result.Name(info.player_info[self.player_id-1].player_result.result)
         if (result != 'Victory'):
             print("Replay: Player 1 does not win")
+            return False
 
         for p in info.player_info:
             if p.player_apm < 10 or p.player_mmr < 1000:
@@ -135,7 +136,7 @@ class Parser: #612
     def start(self):
         print("Hello we are in Start")
         step_mul = 1
-        trainingDataPath = 'F:/training_data/486/'
+        trainingDataPath = 'C:\\Users\\Charlie\\training_data\\4101\\'
         _features = features.features_from_game_info(self.controller.game_info(), use_camera_position=True)
         #print("world_tl_to_world_camera_rel: {}\n\nworld_to_feature_screen_px: {}\n\nworld_to_world_tl: {}".format(_features._world_tl_to_world_camera_rel,
         #                                                                              _features._world_to_feature_screen_px,
@@ -205,9 +206,12 @@ class Parser: #612
             #screenpoint = point.Point(*screenpoint)
             
             if obs.player_result:
+                os.remove(replay_file_path)
+                print("Game Ended, File Removed")
                 break
 
             self._state = StepType.MID
+
 
         # print("Saving data")
         # #print(self.info)
@@ -250,9 +254,9 @@ def parse_replay(replay_batch, agent_module, agent_cls):
 def main(unused):
     agent_module, agent_name = FLAGS.agent.rsplit(".", 1)
     agent_cls = getattr(importlib.import_module(agent_module), agent_name)
-    processes = 1 #int(FLAGS.procs / 2)
+    processes = int(FLAGS.procs / 2)
     replay_folder = FLAGS.replays
-    batch_size = 44#FLAGS.batch
+    batch_size = FLAGS.batch
 
     truePath = os.path.join(replay_folder, '*.SC2Replay')
     replays = glob.glob(truePath, recursive=True)

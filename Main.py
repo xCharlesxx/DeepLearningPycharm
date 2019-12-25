@@ -13,9 +13,9 @@ import Bots
 
 from Bots.MoveToBeacon import MoveToBeacon, GenerateMoveToBeaconTestData
 from Bots.Overmind.Overmind import Overmind
-from DeepNetwork import build_knet, build_transformer, build_LSTM, train_LSTM
+from DeepNetwork import build_knet, build_LSTM, train_LSTM, check_replay
 from Bots.DefeatEnemies import RandomAgent, DefeatEnemies
-from pysc2Replay.ObserverAgent import NothingAgent
+from pysc2Replay.ObserverAgent import NothingAgent, ObserverAgent
 from pysc2.agents import base_agent
 from pysc2.env import sc2_env, run_loop
 from pysc2.lib import actions, features, units
@@ -27,6 +27,7 @@ from absl import app
 def main(unused_argv):
     #build_knet()
     #build_transformer()
+    #check_replay()
     #build_LSTM()
     # Dynamically grow the memory used on GPU
     # config = tf.ConfigProto()

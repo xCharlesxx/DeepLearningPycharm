@@ -11,7 +11,7 @@ from pysc2.agents import base_agent
 from Constants import const
 from Translator import Translator
 from TranslateOutputs import translate
-from DeepNetwork import get_training_data_dirs, extract_data_dirs
+#from DeepNetwork import get_training_data_dirs, extract_data_dirs
 
 import datetime
 class ObserverAgent(base_agent.BaseAgent):

@@ -5,11 +5,11 @@ class const:
     def OutputSize():
         return 2
     def ScreenSize():
-        return point.Point(352, 352)
+        return point.Point(352, 352)#point.Point(352, 352)
     def MiniMapSize():
         return point.Point(352, 352)
     def WorldSize():
-        return point.Point(176, 176) # (153, 148)
+        return point.Point(176, 176) # 176
     def IsMicroUnit(x):
         # Empty
         if (len(x) == 0):

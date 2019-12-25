@@ -269,14 +269,14 @@ class Overmind(base_agent.BaseAgent):
         if (not self.loaded):
             self.loaded = True
             self.homeHatch = self.get_buildings(obs, units.Zerg.Hatchery)[0]
-            self.model = ks.models.load_model("C:\\Models\\Conv2D-LSTM")
+            self.model = ks.models.load_model("C:\\Users\\Charlie\Models\\Conv2D-noobs - 1st Gen")
             return FUNCTIONS.move_camera([const.MiniMapSize().x / 2, const.MiniMapSize().y / 2])
 
         # If nothing to macro
-        if obs.observation.player['food_army'] < 10:
-            function = self.macro(obs)
-            print(function)
-            return function
+        # if obs.observation.player['food_army'] < 10:
+        #     function = self.macro(obs)
+        #     print(function)
+        #     return function
 
         T = Translator()
 
